@@ -596,7 +596,7 @@ export default function IgProductsSection() {
 
           {/* Shop CTA */}
           <a
-            href="https://rebru.vercel.app/products"
+            href="https://bio.rebru.id/ig#products"
             target="_blank"
             rel="noopener noreferrer"
             className={`flex items-center justify-center gap-3 w-full mt-8 py-3.5 rounded-pill font-sans font-medium text-[0.88rem] transition-all duration-700 hover:scale-[1.02] active:scale-[0.98] ${inView ? "opacity-100" : "opacity-0"}`}

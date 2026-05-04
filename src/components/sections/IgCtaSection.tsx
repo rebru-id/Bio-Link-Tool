@@ -25,7 +25,7 @@ const ACTIONS = [
     icon: "fa-arrow-up-right-from-square",
     label: "Explore the Platform",
     desc: "Lihat website lengkap.",
-    href: "https://rebru.vercel.app/",
+    href: "https://rebru.id/",
     color: "#c8a84b",
     bg: "rgba(200,168,75,0.08)",
     border: "rgba(200,168,75,0.2)",
@@ -188,7 +188,7 @@ export default function IgCtaSection() {
             {
               icon: "fas fa-globe",
               label: "rebru.id",
-              href: "https://rebru.vercel.app/",
+              href: "https://rebru.id/",
               color: "var(--coffee-latte)",
             },
           ].map((s, i) => (

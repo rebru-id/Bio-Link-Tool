@@ -1,42 +1,51 @@
 // src/components/sections/IgPartnershipSection.tsx
 // ─────────────────────────────────────────────────────────────────────────────
-// REWRITTEN — Partnership section untuk IG landing page
+// FIXED v2 — Perubahan dari versi sebelumnya:
 //
-// Perubahan dari versi sebelumnya:
-//   1. TIERS (lokal, tidak sinkron) → PACKAGES dari @/data/packages
-//      Data paket kini identik dengan Rebru website
+//   BUG FIX:
+//   - FormData.kecamatan dan FormData.alamat kini field terpisah.
+//     Sebelumnya keduanya memakai form.alamat sehingga saling override.
 //
-//   2. Form WhatsApp (tidak tercatat) → form lengkap via @/services/partnership
-//      Data masuk ke Supabase table `partner_applications` yang sama
-//      dengan Rebru website — admin dapat monitor semua submission
-//
-//   3. Field form diperluas agar kompatibel dengan schema Supabase:
-//      name, organization, phone, email, jenis_usaha, volume_limbah,
-//      city, alamat, type, message, source
-//
-// UX: mobile-first bottom sheet, 3 langkah, konsisten dengan
-// gaya visual seluruh section IG landing page (max-w-[480px])
+//   IMPROVEMENT:
+//   - Step 3 (Lokasi) kini menggunakan cascading dropdown yang identik
+//     dengan ContactFormSection.tsx di Rebru website:
+//       kota → kecamatan (unlock setelah kota dipilih)
+//             → kelurahan (unlock setelah kecamatan dipilih)
+//   - Kota non-aktif ditampilkan disabled dengan label "(segera)"
+//   - Jika kota = "lain": kecamatan & kelurahan jadi input teks manual
+//   - Jika kota aktif tapi kecamatan belum ada datanya: input teks manual
+//   - Native <select> — paling reliable di mobile (membuka native OS picker)
+//   - Style konsisten dengan visual IG landing (dark theme, rounded-xl)
 // ─────────────────────────────────────────────────────────────────────────────
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useInView } from "@/hooks/useInView";
 import { PACKAGES, type Package } from "@/data/packages";
 import {
   insertPartnerApplication,
   type PartnerApplicationPayload,
 } from "@/services/partnership";
+import {
+  getKotaList,
+  getKecamatanByKota,
+  getKelurahanByKecamatan,
+} from "@/lib/location-data";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
 const FLOW_STEPS = [
-  { icon: "fa-file-pen",      label: "Apply",      color: "var(--coffee-latte)" },
-  { icon: "fa-circle-check",  label: "Approval",   color: "var(--forest-sage)"  },
-  { icon: "fa-truck",         label: "Collection", color: "#d4783a"              },
-  { icon: "fa-arrows-rotate", label: "Processing", color: "var(--coffee-latte)" },
-  { icon: "fa-chart-bar",     label: "Reporting",  color: "#7aab7e"              },
+  { icon: "fa-file-pen", label: "Apply", color: "var(--coffee-latte)" },
+  { icon: "fa-circle-check", label: "Approval", color: "var(--forest-sage)" },
+  { icon: "fa-truck", label: "Collection", color: "#d4783a" },
+  {
+    icon: "fa-arrows-rotate",
+    label: "Processing",
+    color: "var(--coffee-latte)",
+  },
+  { icon: "fa-chart-bar", label: "Reporting", color: "#7aab7e" },
 ];
 
 const JENIS_USAHA_OPTIONS = [
@@ -49,31 +58,36 @@ const JENIS_USAHA_OPTIONS = [
 ];
 
 const VOLUME_OPTIONS = [
-  { label: "< 1 kg / hari",    value: "< 1 kg / hari"    },
-  { label: "1 – 5 kg / hari",  value: "1 – 5 kg / hari"  },
+  { label: "< 1 kg / hari", value: "< 1 kg / hari" },
+  { label: "1 – 5 kg / hari", value: "1 – 5 kg / hari" },
   { label: "5 – 10 kg / hari", value: "5 – 10 kg / hari" },
-  { label: "> 10 kg / hari",   value: "> 10 kg / hari"   },
+  { label: "> 10 kg / hari", value: "> 10 kg / hari" },
 ];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^(\+62|62|0)8[0-9]{8,11}$/;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Form state types
+// Form state — FIXED: kecamatan dan alamat kini field terpisah
 // ─────────────────────────────────────────────────────────────────────────────
 
 type FormStep = 1 | 2 | 3;
 
 interface FormData {
   type: "kontributor" | "dampak" | "strategis" | "";
+  // Step 2 — identitas
   pic: string;
   organization: string;
   phone: string;
   email: string;
   jenisUsaha: string;
   volumeLimbah: string;
-  city: string;
-  alamat: string;
+  // Step 3 — lokasi (FIXED: 4 field terpisah)
+  kota: string;
+  kotaCustom: string; // dipakai jika kota === "lain"
+  kecamatan: string; // FIXED: field terpisah dari alamat
+  kelurahan: string; // FIXED: field terpisah dari alamat
+  alamat: string; // FIXED: hanya untuk alamat lengkap
   message: string;
 }
 
@@ -85,27 +99,47 @@ const EMPTY_FORM: FormData = {
   email: "",
   jenisUsaha: "",
   volumeLimbah: "",
-  city: "",
+  kota: "",
+  kotaCustom: "",
+  kecamatan: "",
+  kelurahan: "",
   alamat: "",
   message: "",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shared UI atoms — konsisten dengan visual IG landing lainnya
+// Shared UI atoms
 // ─────────────────────────────────────────────────────────────────────────────
 
-const sharedInputStyle: React.CSSProperties = {
+const inputBase: React.CSSProperties = {
   width: "100%",
   background: "var(--bg-card)",
   border: "1px solid var(--border-default)",
   color: "var(--text-primary)",
   borderRadius: "12px",
-  padding: "12px 14px",
+  padding: "11px 14px",
   fontSize: "0.88rem",
   outline: "none",
   fontFamily: "inherit",
   transition: "border-color 0.2s",
 };
+
+// Native <select> styled untuk dark theme + mobile-friendly
+const selectStyle = (
+  hasError?: boolean,
+  disabled?: boolean,
+): React.CSSProperties => ({
+  ...inputBase,
+  appearance: "none",
+  WebkitAppearance: "none",
+  cursor: disabled ? "not-allowed" : "pointer",
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a6e63' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 14px center",
+  paddingRight: "36px",
+  borderColor: hasError ? "rgba(248,113,113,0.5)" : "var(--border-default)",
+  opacity: disabled ? 0.4 : 1,
+});
 
 function FieldLabel({
   children,
@@ -152,18 +186,36 @@ function FieldError({ msg }: { msg?: string }) {
   );
 }
 
+function FieldHint({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: "0.55rem",
+        color: "var(--text-muted)",
+        marginTop: "4px",
+        letterSpacing: "0.05em",
+      }}
+    >
+      {children}
+    </p>
+  );
+}
+
 function FocusInput({
   value,
   onChange,
   placeholder,
   type = "text",
   error,
+  disabled,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
   type?: string;
   error?: string;
+  disabled?: boolean;
 }) {
   const [focused, setFocused] = useState(false);
   return (
@@ -171,23 +223,26 @@ function FocusInput({
       type={type}
       value={value}
       placeholder={placeholder}
+      disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
       style={{
-        ...sharedInputStyle,
+        ...inputBase,
         borderColor: error
           ? "rgba(248,113,113,0.5)"
           : focused
             ? "var(--coffee-latte)"
             : "var(--border-default)",
+        opacity: disabled ? 0.4 : 1,
+        cursor: disabled ? "not-allowed" : "text",
       }}
     />
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Step 1 — Pilih tier kemitraan
+// Step 1 — Pilih tier kemitraan (tidak berubah)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Step1TierSelect({
@@ -228,7 +283,6 @@ function Step1TierSelect({
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                  {/* Radio indicator */}
                   <div
                     className="w-4 h-4 rounded-full flex-shrink-0 transition-all duration-200 flex items-center justify-center"
                     style={{
@@ -247,7 +301,9 @@ function Step1TierSelect({
                     <p
                       className="font-sans font-medium text-[0.9rem] leading-tight"
                       style={{
-                        color: isSelected ? "var(--text-primary)" : "var(--text-secondary)",
+                        color: isSelected
+                          ? "var(--text-primary)"
+                          : "var(--text-secondary)",
                       }}
                     >
                       {pkg.tier}
@@ -260,11 +316,12 @@ function Step1TierSelect({
                     </p>
                   </div>
                 </div>
-                {/* Price badge */}
                 <span
                   className="font-mono text-[0.62rem] tracking-[0.06em] px-2 py-1 rounded-pill flex-shrink-0"
                   style={{
-                    background: isSelected ? `${pkg.accent}18` : "var(--bg-elevated)",
+                    background: isSelected
+                      ? `${pkg.accent}18`
+                      : "var(--bg-elevated)",
                     border: `1px solid ${isSelected ? `${pkg.accent}30` : "var(--border-default)"}`,
                     color: isSelected ? pkg.accent : "var(--text-muted)",
                   }}
@@ -273,12 +330,14 @@ function Step1TierSelect({
                 </span>
               </div>
 
-              {/* Features preview — only when selected */}
               {isSelected && (
                 <ul className="mt-3 space-y-1.5 pl-6">
                   {pkg.features.slice(0, 3).map((f, i) => (
                     <li key={i} className="flex items-start gap-2">
-                      <span className="text-[0.6rem] mt-0.5" style={{ color: pkg.accent }}>
+                      <span
+                        className="text-[0.6rem] mt-0.5"
+                        style={{ color: pkg.accent }}
+                      >
                         ✓
                       </span>
                       <span
@@ -320,7 +379,7 @@ function Step1TierSelect({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Step 2 — Identitas & profil bisnis
+// Step 2 — Identitas & profil bisnis (tidak berubah)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Step2Identity({
@@ -334,19 +393,22 @@ function Step2Identity({
   onNext: () => void;
   onBack: () => void;
 }) {
-  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
+    {},
+  );
 
   function validate(): boolean {
     const e: typeof errors = {};
     if (!form.pic.trim()) e.pic = "Nama wajib diisi";
-    if (!form.organization.trim()) e.organization = "Nama kafe/bisnis wajib diisi";
+    if (!form.organization.trim())
+      e.organization = "Nama kafe/bisnis wajib diisi";
     if (!form.phone.trim()) e.phone = "Nomor WhatsApp wajib diisi";
     else if (!PHONE_RE.test(form.phone.replace(/[\s-]/g, "")))
-      e.phone = "Format tidak valid (contoh: 08xx atau +628xx)";
+      e.phone = "Format tidak valid";
     if (!form.email.trim()) e.email = "Email wajib diisi";
     else if (!EMAIL_RE.test(form.email)) e.email = "Format email tidak valid";
-    if (!form.jenisUsaha) e.jenisUsaha = "Jenis usaha wajib dipilih";
-    if (!form.volumeLimbah) e.volumeLimbah = "Estimasi volume wajib dipilih";
+    if (!form.jenisUsaha) e.jenisUsaha = "Wajib dipilih";
+    if (!form.volumeLimbah) e.volumeLimbah = "Wajib dipilih";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -366,7 +428,6 @@ function Step2Identity({
       </div>
 
       <div className="space-y-3">
-        {/* PIC + Org */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <FieldLabel>Nama PIC *</FieldLabel>
@@ -389,8 +450,6 @@ function Step2Identity({
             <FieldError msg={errors.organization} />
           </div>
         </div>
-
-        {/* Phone + Email */}
         <div>
           <FieldLabel>Nomor WhatsApp *</FieldLabel>
           <FocusInput
@@ -413,51 +472,50 @@ function Step2Identity({
           />
           <FieldError msg={errors.email} />
         </div>
-
-        {/* Jenis usaha */}
         <div>
           <FieldLabel>Jenis Usaha *</FieldLabel>
           <select
             value={form.jenisUsaha}
             onChange={(e) => onChange("jenisUsaha", e.target.value)}
-            style={{
-              ...sharedInputStyle,
-              appearance: "none",
-              cursor: "pointer",
-              borderColor: errors.jenisUsaha
-                ? "rgba(248,113,113,0.5)"
-                : "var(--border-default)",
-            }}
+            style={selectStyle(!!errors.jenisUsaha)}
           >
-            <option value="" disabled style={{ background: "var(--bg-surface)" }}>
+            <option
+              value=""
+              disabled
+              style={{ background: "var(--bg-surface)" }}
+            >
               Pilih jenis usaha...
             </option>
             {JENIS_USAHA_OPTIONS.map((opt) => (
-              <option key={opt} value={opt} style={{ background: "var(--bg-surface)" }}>
+              <option
+                key={opt}
+                value={opt}
+                style={{ background: "var(--bg-surface)" }}
+              >
                 {opt}
               </option>
             ))}
           </select>
           <FieldError msg={errors.jenisUsaha} />
         </div>
-
-        {/* Volume */}
         <div>
           <FieldLabel>Estimasi Volume Ampas / Hari *</FieldLabel>
           <div className="grid grid-cols-2 gap-2">
             {VOLUME_OPTIONS.map((opt) => {
-              const isSelected = form.volumeLimbah === opt.value;
+              const isSel = form.volumeLimbah === opt.value;
               return (
                 <button
                   key={opt.value}
                   onClick={() => onChange("volumeLimbah", opt.value)}
                   className="py-2.5 px-3 rounded-xl text-left text-[0.78rem] transition-all duration-150"
                   style={{
-                    background: isSelected
+                    background: isSel
                       ? "rgba(196,149,106,0.1)"
                       : "var(--bg-card)",
-                    border: `1px solid ${isSelected ? "rgba(196,149,106,0.3)" : "var(--border-default)"}`,
-                    color: isSelected ? "var(--coffee-latte)" : "var(--text-secondary)",
+                    border: `1px solid ${isSel ? "rgba(196,149,106,0.3)" : "var(--border-default)"}`,
+                    color: isSel
+                      ? "var(--coffee-latte)"
+                      : "var(--text-secondary)",
                   }}
                 >
                   {opt.label}
@@ -469,7 +527,6 @@ function Step2Identity({
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex gap-2 mt-5">
         <button
           onClick={onBack}
@@ -483,9 +540,14 @@ function Step2Identity({
           ← Kembali
         </button>
         <button
-          onClick={() => { if (validate()) onNext(); }}
+          onClick={() => {
+            if (validate()) onNext();
+          }}
           className="flex-1 py-3.5 rounded-pill font-medium text-[0.88rem] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-          style={{ background: "var(--coffee-latte)", color: "var(--coffee-dark)" }}
+          style={{
+            background: "var(--coffee-latte)",
+            color: "var(--coffee-dark)",
+          }}
         >
           Lanjutkan →
         </button>
@@ -495,10 +557,18 @@ function Step2Identity({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Step 3 — Lokasi & konfirmasi
+// Step 3 — Lokasi (FIXED + cascading dropdown)
+//
+// Desain: Progressive disclosure — unlock field berikutnya setelah field
+// sebelumnya diisi. Pattern ini dikenal sebagai "dependent dropdown" dan
+// sangat umum pada form lokasi di aplikasi mobile seperti GoPay, Tokopedia.
+//
+// UX mobile: native <select> membuka OS picker (lebih cepat dari custom
+// dropdown, tidak perlu scroll virtual, accessible secara default).
+// Unlock state (disabled) memberikan visual feedback tanpa perlu modal/toast.
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Step3Confirm({
+function Step3Location({
   form,
   onChange,
   onSubmit,
@@ -513,32 +583,70 @@ function Step3Confirm({
   loading: boolean;
   submitError: string | null;
 }) {
-  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
+    {},
+  );
+
+  // ── Derived location data ──────────────────────────────────────────────────
+  const kotaList = useMemo(() => getKotaList(), []);
+  const kecamatanList = useMemo(
+    () =>
+      form.kota && form.kota !== "lain" ? getKecamatanByKota(form.kota) : [],
+    [form.kota],
+  );
+  const kelurahanList = useMemo(
+    () => (form.kecamatan ? getKelurahanByKecamatan(form.kecamatan) : []),
+    [form.kecamatan],
+  );
+
+  const selectedKota = kotaList.find((k) => k.value === form.kota);
+  const isKotaLain = form.kota === "lain";
+  const isKotaAktif = selectedKota?.aktif ?? false;
+  // Kota aktif tapi belum ada data kecamatan → input manual
+  const useManualKec = isKotaLain || !isKotaAktif || kecamatanList.length === 0;
+  const useManualKel = isKotaLain || !isKotaAktif || kelurahanList.length === 0;
+
   const selectedPackage = PACKAGES.find((p) => p.id === form.type);
 
   function validate(): boolean {
     const e: typeof errors = {};
-    if (!form.city.trim()) e.city = "Kota wajib diisi";
-    if (!form.alamat.trim()) e.alamat = "Alamat wajib diisi";
+    if (!form.kota) e.kota = "Kota wajib dipilih";
+    if (isKotaLain && !form.kotaCustom.trim()) e.kotaCustom = "Isi nama kota";
+    if (!form.kecamatan.trim()) e.kecamatan = "Kecamatan wajib diisi";
+    if (!form.kelurahan.trim()) e.kelurahan = "Kelurahan wajib diisi";
+    if (!form.alamat.trim()) e.alamat = "Alamat lengkap wajib diisi";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
+  // Reset kecamatan & kelurahan ketika kota berubah
+  function handleKotaChange(v: string) {
+    onChange("kota", v);
+    onChange("kecamatan", "");
+    onChange("kelurahan", "");
+  }
+
+  // Reset kelurahan ketika kecamatan berubah
+  function handleKecamatanChange(v: string) {
+    onChange("kecamatan", v);
+    onChange("kelurahan", "");
+  }
+
   return (
     <>
-      <div className="mb-5">
+      <div className="mb-4">
         <h3
           className="font-display font-semibold text-[1.4rem] mb-1"
           style={{ color: "var(--text-primary)" }}
         >
-          Lokasi &amp; Konfirmasi
+          Lokasi Usaha
         </h3>
         <p className="text-[0.8rem]" style={{ color: "var(--text-secondary)" }}>
           Dibutuhkan untuk perencanaan jadwal penjemputan.
         </p>
       </div>
 
-      {/* Summary pill */}
+      {/* Package summary */}
       {selectedPackage && (
         <div
           className="flex items-center gap-2.5 px-4 py-3 rounded-xl mb-4"
@@ -578,38 +686,181 @@ function Step3Confirm({
       )}
 
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <FieldLabel>Kota *</FieldLabel>
-            <FocusInput
-              value={form.city}
-              onChange={(v) => onChange("city", v)}
-              placeholder="Makassar"
-              error={errors.city}
-            />
-            <FieldError msg={errors.city} />
-          </div>
-          <div>
-            <FieldLabel>Kecamatan</FieldLabel>
-            <FocusInput
-              value={form.alamat}
-              onChange={(v) => onChange("alamat", v)}
-              placeholder="Nama kecamatan"
-            />
-          </div>
+        {/* ── 1. Kota ─────────────────────────────────────────────────────── */}
+        <div>
+          <FieldLabel>Kota / Kabupaten *</FieldLabel>
+          <select
+            value={form.kota}
+            onChange={(e) => handleKotaChange(e.target.value)}
+            style={selectStyle(!!errors.kota)}
+          >
+            <option
+              value=""
+              disabled
+              style={{ background: "var(--bg-surface)" }}
+            >
+              Pilih kota...
+            </option>
+            {kotaList.map((opt) => (
+              <option
+                key={opt.value}
+                value={opt.value}
+                disabled={opt.value !== "lain" && !opt.aktif}
+                style={{
+                  background: "var(--bg-surface)",
+                  color: opt.aktif
+                    ? "var(--text-primary)"
+                    : "var(--text-muted)",
+                }}
+              >
+                {opt.label}
+                {!opt.aktif && opt.value !== "lain" ? "" : ""}
+              </option>
+            ))}
+          </select>
+          <FieldError msg={errors.kota} />
         </div>
 
+        {/* ── 1b. Kota custom (jika "lain") ─────────────────────────────── */}
+        {isKotaLain && (
+          <div>
+            <FieldLabel>Nama Kota / Kabupaten *</FieldLabel>
+            <FocusInput
+              value={form.kotaCustom}
+              onChange={(v) => onChange("kotaCustom", v)}
+              placeholder="Contoh: Parepare, Bone, Palopo..."
+              error={errors.kotaCustom}
+            />
+            <FieldError msg={errors.kotaCustom} />
+          </div>
+        )}
+
+        {/* Kota tidak aktif — info banner */}
+        {form.kota && !isKotaAktif && !isKotaLain && (
+          <div
+            className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl"
+            style={{
+              background: "rgba(200,168,75,0.07)",
+              border: "1px solid rgba(200,168,75,0.2)",
+            }}
+          >
+            <i
+              className="fas fa-info-circle text-xs mt-0.5"
+              style={{ color: "#c8a84b" }}
+            />
+            <p
+              className="font-mono text-[0.58rem] tracking-[0.06em] leading-[1.5]"
+              style={{ color: "#c8a84b" }}
+            >
+              Data kecamatan & kelurahan untuk wilayah ini segera tersedia. Isi
+              manual di bawah.
+            </p>
+          </div>
+        )}
+
+        {/* ── 2. Kecamatan ──────────────────────────────────────────────── */}
+        {/* FIXED: field ini sepenuhnya terpisah dari alamat */}
+        <div>
+          <FieldLabel>Kecamatan *</FieldLabel>
+          {useManualKec ? (
+            <>
+              <FocusInput
+                value={form.kecamatan}
+                onChange={(v) => onChange("kecamatan", v)}
+                placeholder={!form.kota ? "Pilih kota dulu" : "Nama kecamatan"}
+                disabled={!form.kota}
+                error={errors.kecamatan}
+              />
+              {!form.kota && <FieldHint>Pilih kota terlebih dahulu</FieldHint>}
+            </>
+          ) : (
+            <select
+              value={form.kecamatan}
+              onChange={(e) => handleKecamatanChange(e.target.value)}
+              disabled={!form.kota}
+              style={selectStyle(!!errors.kecamatan, !form.kota)}
+            >
+              <option
+                value=""
+                disabled
+                style={{ background: "var(--bg-surface)" }}
+              >
+                Pilih kecamatan...
+              </option>
+              {kecamatanList.map((opt) => (
+                <option
+                  key={opt.value}
+                  value={opt.value}
+                  style={{ background: "var(--bg-surface)" }}
+                >
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          )}
+          <FieldError msg={errors.kecamatan} />
+        </div>
+
+        {/* ── 3. Kelurahan ──────────────────────────────────────────────── */}
+        {/* FIXED: field ini sepenuhnya terpisah dari alamat */}
+        <div>
+          <FieldLabel>Kelurahan *</FieldLabel>
+          {useManualKel ? (
+            <>
+              <FocusInput
+                value={form.kelurahan}
+                onChange={(v) => onChange("kelurahan", v)}
+                placeholder={
+                  !form.kecamatan ? "Isi kecamatan dulu" : "Nama kelurahan"
+                }
+                disabled={!form.kecamatan}
+                error={errors.kelurahan}
+              />
+              {!form.kecamatan && (
+                <FieldHint>Isi kecamatan terlebih dahulu</FieldHint>
+              )}
+            </>
+          ) : (
+            <select
+              value={form.kelurahan}
+              onChange={(e) => onChange("kelurahan", e.target.value)}
+              disabled={!form.kecamatan}
+              style={selectStyle(!!errors.kelurahan, !form.kecamatan)}
+            >
+              <option
+                value=""
+                disabled
+                style={{ background: "var(--bg-surface)" }}
+              >
+                Pilih kelurahan...
+              </option>
+              {kelurahanList.map((opt) => (
+                <option
+                  key={opt.value}
+                  value={opt.value}
+                  style={{ background: "var(--bg-surface)" }}
+                >
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          )}
+          <FieldError msg={errors.kelurahan} />
+        </div>
+
+        {/* ── 4. Alamat lengkap — FIXED: field sendiri, tidak overlap ───── */}
         <div>
           <FieldLabel>Alamat Lengkap *</FieldLabel>
           <FocusInput
             value={form.alamat}
             onChange={(v) => onChange("alamat", v)}
-            placeholder="Jl. Nama Jalan No. xx"
+            placeholder="Jl. Nama Jalan No. xx, RT/RW xx/xx"
             error={errors.alamat}
           />
           <FieldError msg={errors.alamat} />
         </div>
 
+        {/* ── 5. Catatan opsional ───────────────────────────────────────── */}
         <div>
           <FieldLabel optional>Catatan tambahan</FieldLabel>
           <textarea
@@ -618,12 +869,16 @@ function Step3Confirm({
             placeholder="Informasi lain yang ingin kamu sampaikan..."
             rows={3}
             style={{
-              ...sharedInputStyle,
+              ...inputBase,
               resize: "none",
               lineHeight: "1.65",
             }}
-            onFocus={(e) => (e.target.style.borderColor = "var(--coffee-latte)")}
-            onBlur={(e) => (e.target.style.borderColor = "var(--border-default)")}
+            onFocus={(e) =>
+              (e.target.style.borderColor = "var(--coffee-latte)")
+            }
+            onBlur={(e) =>
+              (e.target.style.borderColor = "var(--border-default)")
+            }
           />
         </div>
       </div>
@@ -661,7 +916,9 @@ function Step3Confirm({
           ← Kembali
         </button>
         <button
-          onClick={() => { if (validate()) onSubmit(); }}
+          onClick={() => {
+            if (validate()) onSubmit();
+          }}
           disabled={loading}
           className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-pill font-medium text-[0.88rem] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
           style={{
@@ -672,13 +929,11 @@ function Step3Confirm({
         >
           {loading ? (
             <>
-              <i className="fas fa-circle-notch fa-spin text-sm" />
-              Mengirim...
+              <i className="fas fa-circle-notch fa-spin text-sm" /> Mengirim...
             </>
           ) : (
             <>
-              <i className="fas fa-paper-plane text-sm" />
-              Kirim Pendaftaran
+              <i className="fas fa-paper-plane text-sm" /> Kirim Pendaftaran
             </>
           )}
         </button>
@@ -699,7 +954,6 @@ function SuccessState({
   onClose: () => void;
 }) {
   const pkg = PACKAGES.find((p) => p.id === form.type);
-
   return (
     <div className="flex flex-col items-center text-center py-4">
       <div
@@ -711,20 +965,20 @@ function SuccessState({
       >
         <i className="fas fa-check text-2xl" style={{ color: "#7aab7e" }} />
       </div>
-
       <h3
         className="font-display font-semibold text-[1.5rem] mb-2"
         style={{ color: "var(--text-primary)" }}
       >
         Pendaftaran Diterima!
       </h3>
-
-      <p className="text-[0.82rem] leading-[1.75] mb-4" style={{ color: "var(--text-secondary)" }}>
+      <p
+        className="text-[0.82rem] leading-[1.75] mb-4"
+        style={{ color: "var(--text-secondary)" }}
+      >
         Terima kasih,{" "}
         <strong style={{ color: "var(--text-primary)" }}>{form.pic}</strong>!
-        Tim Rebru akan menghubungi kamu via WhatsApp dalam 1×24 jam kerja.
+        Tim Rebru akan menghubungi via WhatsApp dalam 1×24 jam kerja.
       </p>
-
       {pkg && (
         <div
           className="w-full rounded-xl px-4 py-3 mb-5"
@@ -733,18 +987,26 @@ function SuccessState({
             border: `1px solid ${pkg.accentBorder}`,
           }}
         >
-          <p className="font-mono text-[0.6rem] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--text-muted)" }}>
+          <p
+            className="font-mono text-[0.6rem] tracking-[0.1em] uppercase mb-1"
+            style={{ color: "var(--text-muted)" }}
+          >
             Paket terdaftar
           </p>
-          <p className="font-sans font-medium text-[0.88rem]" style={{ color: pkg.accent }}>
+          <p
+            className="font-sans font-medium text-[0.88rem]"
+            style={{ color: pkg.accent }}
+          >
             {pkg.tier} — {pkg.badge}
           </p>
-          <p className="font-mono text-[0.6rem] mt-0.5" style={{ color: "var(--text-muted)" }}>
-            Status: Pending Review
+          <p
+            className="font-mono text-[0.6rem] mt-0.5"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Status: Pending Review · Sumber: IG Landing
           </p>
         </div>
       )}
-
       <button
         onClick={onClose}
         className="w-full py-3.5 rounded-pill text-[0.85rem] font-medium transition-all duration-200"
@@ -760,7 +1022,7 @@ function SuccessState({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bottom Sheet Form — mobile-first, 3 langkah
+// Bottom Sheet — orchestrator
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PartnershipBottomSheet({
@@ -778,12 +1040,6 @@ function PartnershipBottomSheet({
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
-  const sheetRef = useRef<HTMLDivElement>(null);
-
-  // Close on outside click
-  function handleBackdropClick(e: React.MouseEvent<HTMLDivElement>) {
-    if (e.target === e.currentTarget) onClose();
-  }
 
   function setField(key: keyof FormData, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -793,6 +1049,24 @@ function PartnershipBottomSheet({
     setLoading(true);
     setSubmitError(null);
     try {
+      const kotaList = getKotaList();
+      const kecamatanList =
+        form.kota && form.kota !== "lain" ? getKecamatanByKota(form.kota) : [];
+      const kelurahanList = form.kecamatan
+        ? getKelurahanByKecamatan(form.kecamatan)
+        : [];
+
+      const kotaLabel =
+        form.kota === "lain"
+          ? form.kotaCustom
+          : (kotaList.find((k) => k.value === form.kota)?.label ?? form.kota);
+      const kecamatanLabel =
+        kecamatanList.find((k) => k.value === form.kecamatan)?.label ??
+        form.kecamatan;
+      const kelurahanLabel =
+        kelurahanList.find((k) => k.value === form.kelurahan)?.label ??
+        form.kelurahan;
+
       const payload: PartnerApplicationPayload = {
         name: form.pic,
         organization: form.organization,
@@ -800,14 +1074,14 @@ function PartnershipBottomSheet({
         email: form.email,
         jenis_usaha: form.jenisUsaha,
         volume_limbah: form.volumeLimbah,
-        city: form.city,
-        kecamatan: "",          // IG form: simplified — kecamatan via alamat
-        kelurahan: "",
+        city: kotaLabel,
+        kecamatan: kecamatanLabel,
+        kelurahan: kelurahanLabel,
         alamat: form.alamat,
         type: form.type as PartnerApplicationPayload["type"],
         message: form.message,
         status: "pending",
-        source: "ig_landing",  // admin dapat filter submission asal IG
+        source: "ig_landing",
       };
       const { error } = await insertPartnerApplication(payload);
       if (error) throw error;
@@ -820,65 +1094,79 @@ function PartnershipBottomSheet({
     }
   }
 
-  const totalSteps = 3;
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-end"
-      onClick={handleBackdropClick}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      {/* Backdrop */}
       <div
         className="absolute inset-0"
         style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
         onClick={onClose}
       />
-
-      {/* Sheet */}
       <div
-        ref={sheetRef}
-        className="relative w-full rounded-t-3xl pb-safe"
+        className="relative w-full rounded-t-3xl"
         style={{
           background: "var(--bg-elevated)",
           border: "1px solid var(--border-default)",
           borderBottom: "none",
           animation: "fade-up 0.28s ease-out",
-          maxHeight: "92vh",
+          maxHeight: "93vh",
           overflowY: "auto",
         }}
       >
-        {/* Handle */}
-        <div className="sticky top-0 pt-4 pb-3 px-6 z-10" style={{ background: "var(--bg-elevated)" }}>
+        {/* Sticky header with progress */}
+        <div
+          className="sticky top-0 pt-4 pb-3 px-6 z-10"
+          style={{
+            background: "var(--bg-elevated)",
+            borderBottom: "1px solid var(--border-subtle)",
+          }}
+        >
           <div
             className="w-10 h-1 rounded-full mx-auto mb-4"
             style={{ background: "var(--border-strong)" }}
           />
-
-          {/* Progress bar */}
           {!done && (
-            <div className="flex items-center gap-1.5 mb-1">
-              {Array.from({ length: totalSteps }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-1 flex-1 rounded-full transition-all duration-400"
-                  style={{
-                    background: i < step ? "var(--coffee-latte)" : "var(--border-default)",
-                  }}
-                />
-              ))}
-            </div>
-          )}
-          {!done && (
-            <p
-              className="font-mono text-[0.55rem] tracking-[0.12em] uppercase text-right"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Langkah {step} dari {totalSteps}
-            </p>
+            <>
+              <div className="flex items-center gap-1.5 mb-1">
+                {[1, 2, 3].map((s) => (
+                  <div
+                    key={s}
+                    className="h-1 flex-1 rounded-full transition-all duration-400"
+                    style={{
+                      background:
+                        s <= step
+                          ? "var(--coffee-latte)"
+                          : "var(--border-default)",
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center justify-between">
+                <p
+                  className="font-mono text-[0.55rem] tracking-[0.12em] uppercase"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {step === 1
+                    ? "Skema kemitraan"
+                    : step === 2
+                      ? "Identitas & profil"
+                      : "Lokasi usaha"}
+                </p>
+                <p
+                  className="font-mono text-[0.55rem] tracking-[0.12em] uppercase"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {step} / 3
+                </p>
+              </div>
+            </>
           )}
         </div>
 
-        <div className="px-6 pb-8">
+        {/* Form body */}
+        <div className="px-6 pb-10 pt-5">
           {done ? (
             <SuccessState form={form} onClose={onClose} />
           ) : step === 1 ? (
@@ -895,7 +1183,7 @@ function PartnershipBottomSheet({
               onBack={() => setStep(1)}
             />
           ) : (
-            <Step3Confirm
+            <Step3Location
               form={form}
               onChange={setField}
               onSubmit={handleSubmit}
@@ -919,7 +1207,6 @@ export default function IgPartnershipSection() {
   const [showForm, setShowForm] = useState(false);
   const [selectedTier, setSelectedTier] = useState<FormData["type"]>("");
 
-  // Handle hash navigation from other sections (#partnership?tier=dampak)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tier = params.get("tier") as FormData["type"] | null;
@@ -956,7 +1243,6 @@ export default function IgPartnershipSection() {
         />
 
         <div ref={ref} className="relative z-10 max-w-[480px] mx-auto">
-          {/* Section label */}
           <p
             className={`inline-flex items-center gap-2.5 font-mono text-[0.65rem] tracking-[0.2em] uppercase mb-5 transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             style={{ color: "var(--coffee-latte)", transitionDelay: "80ms" }}
@@ -968,7 +1254,6 @@ export default function IgPartnershipSection() {
             Partnership
           </p>
 
-          {/* Heading */}
           <h2
             className={`font-display font-semibold leading-[1.1] mb-3 transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             style={{
@@ -988,11 +1273,10 @@ export default function IgPartnershipSection() {
             style={{ color: "var(--text-secondary)", transitionDelay: "240ms" }}
           >
             Rebru menyediakan solusi end-to-end — dari penjemputan hingga
-            laporan dampak. Sistem kami menyesuaikan kebutuhan operasional
-            bisnismu.
+            laporan dampak.
           </p>
 
-          {/* Onboarding flow strip */}
+          {/* Partnership flow strip */}
           <div
             className={`mb-8 p-4 rounded-2xl transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             style={{
@@ -1044,7 +1328,7 @@ export default function IgPartnershipSection() {
             </div>
           </div>
 
-          {/* Package cards — PACKAGES dari shared data, bukan TIERS lokal */}
+          {/* Package cards */}
           <div className="space-y-3">
             {PACKAGES.map((pkg, i) => (
               <div
@@ -1056,7 +1340,6 @@ export default function IgPartnershipSection() {
                   transitionDelay: `${380 + i * 130}ms`,
                 }}
               >
-                {/* Card header */}
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     {(pkg.featured || pkg.premium) && (
@@ -1089,15 +1372,12 @@ export default function IgPartnershipSection() {
                     {pkg.badge}
                   </span>
                 </div>
-
                 <p
                   className="text-[0.8rem] leading-[1.65] mb-4"
                   style={{ color: "var(--text-secondary)" }}
                 >
                   {pkg.tagline}
                 </p>
-
-                {/* Features */}
                 <ul className="space-y-1.5 mb-4">
                   {pkg.features.map((f, j) => (
                     <li key={j} className="flex items-start gap-2">
@@ -1116,8 +1396,6 @@ export default function IgPartnershipSection() {
                     </li>
                   ))}
                 </ul>
-
-                {/* CTA */}
                 <button
                   onClick={() => openForm(pkg.id as FormData["type"])}
                   className="w-full py-3 rounded-pill font-sans font-medium text-[0.85rem] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
@@ -1140,7 +1418,6 @@ export default function IgPartnershipSection() {
             ))}
           </div>
 
-          {/* T&C note */}
           <p
             className={`text-center font-mono text-[0.58rem] tracking-[0.1em] uppercase mt-6 transition-all duration-700 ${inView ? "opacity-100" : "opacity-0"}`}
             style={{ color: "var(--text-muted)", transitionDelay: "780ms" }}
@@ -1150,11 +1427,13 @@ export default function IgPartnershipSection() {
         </div>
       </section>
 
-      {/* Bottom sheet form */}
       {showForm && (
         <PartnershipBottomSheet
           initialType={selectedTier || undefined}
-          onClose={() => { setShowForm(false); setSelectedTier(""); }}
+          onClose={() => {
+            setShowForm(false);
+            setSelectedTier("");
+          }}
         />
       )}
     </>

@@ -21,9 +21,9 @@
 
 import { useState, useRef, useMemo, useEffect } from "react";
 import { useInView } from "@/hooks/useInView";
-import { PACKAGES, type Package } from "@/data/packages";
 import {
   insertPartnerApplication,
+  getPackages,
   type PartnerApplicationPayload,
 } from "@/services/partnership";
 import {
@@ -246,10 +246,12 @@ function FocusInput({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Step1TierSelect({
+  packages,
   selected,
   onSelect,
   onNext,
 }: {
+  packages: Package[];
   selected: FormData["type"];
   onSelect: (id: FormData["type"]) => void;
   onNext: () => void;
@@ -269,16 +271,16 @@ function Step1TierSelect({
       </div>
 
       <div className="space-y-2.5 mb-5">
-        {PACKAGES.map((pkg) => {
-          const isSelected = selected === pkg.id;
+        {packages.map((pkg) => {
+          const isSelected = selected === pkg.slug;
           return (
             <button
-              key={pkg.id}
-              onClick={() => onSelect(pkg.id as FormData["type"])}
+              key={pkg.slug}
+              onClick={() => onSelect(pkg.slug as FormData["type"])}
               className="w-full rounded-2xl p-4 text-left transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
               style={{
-                background: isSelected ? pkg.accentBg : "var(--bg-card)",
-                border: `1px solid ${isSelected ? pkg.accentBorder : "var(--border-default)"}`,
+                background: isSelected ? pkg.accent_bg : "var(--bg-card)",
+                border: `1px solid ${isSelected ? pkg.accent_border : "var(--border-default)"}`,
               }}
             >
               <div className="flex items-start justify-between gap-3">
@@ -575,6 +577,7 @@ function Step3Location({
   onBack,
   loading,
   submitError,
+  packages,
 }: {
   form: FormData;
   onChange: (key: keyof FormData, value: string) => void;
@@ -582,6 +585,7 @@ function Step3Location({
   onBack: () => void;
   loading: boolean;
   submitError: string | null;
+  packages: Package[];
 }) {
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
     {},
@@ -606,7 +610,7 @@ function Step3Location({
   const useManualKec = isKotaLain || !isKotaAktif || kecamatanList.length === 0;
   const useManualKel = isKotaLain || !isKotaAktif || kelurahanList.length === 0;
 
-  const selectedPackage = PACKAGES.find((p) => p.id === form.type);
+  const selectedPackage = packages.find((p) => p.slug === form.type);
 
   function validate(): boolean {
     const e: typeof errors = {};
@@ -651,8 +655,8 @@ function Step3Location({
         <div
           className="flex items-center gap-2.5 px-4 py-3 rounded-xl mb-4"
           style={{
-            background: selectedPackage.accentBg,
-            border: `1px solid ${selectedPackage.accentBorder}`,
+            background: selectedPackage.accent_bg,
+            border: `1px solid ${selectedPackage.accent_border}`,
           }}
         >
           <i
@@ -949,11 +953,13 @@ function Step3Location({
 function SuccessState({
   form,
   onClose,
+  packages,
 }: {
   form: FormData;
   onClose: () => void;
+  packages: Package[];
 }) {
-  const pkg = PACKAGES.find((p) => p.id === form.type);
+  const pkg = packages.find((p) => p.slug === form.type);
   return (
     <div className="flex flex-col items-center text-center py-4">
       <div
@@ -983,8 +989,8 @@ function SuccessState({
         <div
           className="w-full rounded-xl px-4 py-3 mb-5"
           style={{
-            background: pkg.accentBg,
-            border: `1px solid ${pkg.accentBorder}`,
+            background: pkg.accent_bg,
+            border: `1px solid ${pkg.accent_border}`,
           }}
         >
           <p
@@ -1028,9 +1034,11 @@ function SuccessState({
 function PartnershipBottomSheet({
   initialType,
   onClose,
+  packages,
 }: {
   initialType?: FormData["type"];
   onClose: () => void;
+  packages: Package[];
 }) {
   const [step, setStep] = useState<FormStep>(initialType ? 2 : 1);
   const [form, setForm] = useState<FormData>({
@@ -1049,24 +1057,6 @@ function PartnershipBottomSheet({
     setLoading(true);
     setSubmitError(null);
     try {
-      const kotaList = getKotaList();
-      const kecamatanList =
-        form.kota && form.kota !== "lain" ? getKecamatanByKota(form.kota) : [];
-      const kelurahanList = form.kecamatan
-        ? getKelurahanByKecamatan(form.kecamatan)
-        : [];
-
-      const kotaLabel =
-        form.kota === "lain"
-          ? form.kotaCustom
-          : (kotaList.find((k) => k.value === form.kota)?.label ?? form.kota);
-      const kecamatanLabel =
-        kecamatanList.find((k) => k.value === form.kecamatan)?.label ??
-        form.kecamatan;
-      const kelurahanLabel =
-        kelurahanList.find((k) => k.value === form.kelurahan)?.label ??
-        form.kelurahan;
-
       const payload: PartnerApplicationPayload = {
         name: form.pic,
         organization: form.organization,
@@ -1074,14 +1064,13 @@ function PartnershipBottomSheet({
         email: form.email,
         jenis_usaha: form.jenisUsaha,
         volume_limbah: form.volumeLimbah,
-        city: kotaLabel,
-        kecamatan: kecamatanLabel,
-        kelurahan: kelurahanLabel,
+        city: form.kota === "lain" ? (form.kotaCustom ?? form.kota) : form.kota,
+        kotaCustom: form.kota === "lain" ? form.kotaCustom : undefined,
+        kecamatan: form.kecamatan,
+        kelurahan: form.kelurahan,
         alamat: form.alamat,
         type: form.type as PartnerApplicationPayload["type"],
         message: form.message,
-        status: "pending",
-        source: "ig_landing",
       };
       const { error } = await insertPartnerApplication(payload);
       if (error) throw error;
@@ -1168,9 +1157,10 @@ function PartnershipBottomSheet({
         {/* Form body */}
         <div className="px-6 pb-10 pt-5">
           {done ? (
-            <SuccessState form={form} onClose={onClose} />
+            <SuccessState form={form} onClose={onClose} packages={packages} />
           ) : step === 1 ? (
             <Step1TierSelect
+              packages={packages}
               selected={form.type}
               onSelect={(id) => setField("type", id)}
               onNext={() => setStep(2)}
@@ -1190,6 +1180,7 @@ function PartnershipBottomSheet({
               onBack={() => setStep(2)}
               loading={loading}
               submitError={submitError}
+              packages={packages}
             />
           )}
         </div>
@@ -1202,10 +1193,33 @@ function PartnershipBottomSheet({
 // Main Section Export
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Type Package inline — tidak lagi dari @/data/packages
+type Package = {
+  id: string;
+  slug: string;
+  tier: string;
+  badge: string;
+  tagline: string;
+  accent: string;
+  accent_bg: string;
+  accent_border: string;
+  featured: boolean;
+  premium: boolean;
+  features: string[];
+  sort_order: number;
+};
+
 export default function IgPartnershipSection() {
   const { ref, inView } = useInView(0.08);
   const [showForm, setShowForm] = useState(false);
   const [selectedTier, setSelectedTier] = useState<FormData["type"]>("");
+  const [packages, setPackages] = useState<Package[]>([]);
+
+  useEffect(() => {
+    getPackages().then((data) => {
+      if (data && data.length > 0) setPackages(data as Package[]);
+    });
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1330,92 +1344,104 @@ export default function IgPartnershipSection() {
 
           {/* Package cards */}
           <div className="space-y-3">
-            {PACKAGES.map((pkg, i) => (
-              <div
-                key={pkg.id}
-                className={`rounded-2xl p-5 transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-                style={{
-                  background: pkg.accentBg,
-                  border: `${pkg.featured || pkg.premium ? "1.5px" : "1px"} solid ${pkg.accentBorder}`,
-                  transitionDelay: `${380 + i * 130}ms`,
-                }}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    {(pkg.featured || pkg.premium) && (
+            {packages.length === 0
+              ? [1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="rounded-2xl p-5 animate-pulse"
+                    style={{
+                      background: "var(--bg-elevated)",
+                      border: "1px solid var(--border-default)",
+                      height: "180px",
+                    }}
+                  />
+                ))
+              : packages.map((pkg, i) => (
+                  <div
+                    key={pkg.slug}
+                    className={`rounded-2xl p-5 transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                    style={{
+                      background: pkg.accent_bg,
+                      border: `${pkg.featured || pkg.premium ? "1.5px" : "1px"} solid ${pkg.accent_border}`,
+                      transitionDelay: `${380 + i * 130}ms`,
+                    }}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        {(pkg.featured || pkg.premium) && (
+                          <span
+                            className="font-mono text-[0.55rem] tracking-[0.12em] uppercase px-2 py-0.5 rounded-pill inline-block mb-1.5"
+                            style={{
+                              background: `${pkg.accent}18`,
+                              border: `1px solid ${pkg.accent}30`,
+                              color: pkg.accent,
+                            }}
+                          >
+                            {pkg.featured ? "✦ Most Popular" : "✦ Premium"}
+                          </span>
+                        )}
+                        <h3
+                          className="font-display font-semibold text-[1.15rem] leading-tight"
+                          style={{ color: pkg.accent }}
+                        >
+                          {pkg.tier}
+                        </h3>
+                      </div>
                       <span
-                        className="font-mono text-[0.55rem] tracking-[0.12em] uppercase px-2 py-0.5 rounded-pill inline-block mb-1.5"
+                        className="font-mono text-[0.62rem] tracking-[0.08em] px-2.5 py-1 rounded-pill flex-shrink-0 ml-2"
                         style={{
                           background: `${pkg.accent}18`,
-                          border: `1px solid ${pkg.accent}30`,
+                          border: `1px solid ${pkg.accent}28`,
                           color: pkg.accent,
                         }}
                       >
-                        {pkg.featured ? "✦ Most Popular" : "✦ Premium"}
+                        {pkg.badge}
                       </span>
-                    )}
-                    <h3
-                      className="font-display font-semibold text-[1.15rem] leading-tight"
-                      style={{ color: pkg.accent }}
+                    </div>
+                    <p
+                      className="text-[0.8rem] leading-[1.65] mb-4"
+                      style={{ color: "var(--text-secondary)" }}
                     >
-                      {pkg.tier}
-                    </h3>
+                      {pkg.tagline}
+                    </p>
+                    <ul className="space-y-1.5 mb-4">
+                      {pkg.features.map((f, j) => (
+                        <li key={j} className="flex items-start gap-2">
+                          <span
+                            className="text-[0.6rem] mt-0.5 flex-shrink-0"
+                            style={{ color: pkg.accent }}
+                          >
+                            ✓
+                          </span>
+                          <span
+                            className="text-[0.78rem] leading-[1.5]"
+                            style={{ color: "var(--text-secondary)" }}
+                          >
+                            {f}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={() => openForm(pkg.slug as FormData["type"])}
+                      className="w-full py-3 rounded-pill font-sans font-medium text-[0.85rem] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                      style={
+                        pkg.featured
+                          ? {
+                              background: "var(--coffee-latte)",
+                              color: "var(--coffee-dark)",
+                            }
+                          : {
+                              background: "transparent",
+                              border: `1px solid ${pkg.accent_border}`,
+                              color: pkg.accent,
+                            }
+                      }
+                    >
+                      Daftar Sekarang
+                    </button>
                   </div>
-                  <span
-                    className="font-mono text-[0.62rem] tracking-[0.08em] px-2.5 py-1 rounded-pill flex-shrink-0 ml-2"
-                    style={{
-                      background: `${pkg.accent}18`,
-                      border: `1px solid ${pkg.accent}28`,
-                      color: pkg.accent,
-                    }}
-                  >
-                    {pkg.badge}
-                  </span>
-                </div>
-                <p
-                  className="text-[0.8rem] leading-[1.65] mb-4"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  {pkg.tagline}
-                </p>
-                <ul className="space-y-1.5 mb-4">
-                  {pkg.features.map((f, j) => (
-                    <li key={j} className="flex items-start gap-2">
-                      <span
-                        className="text-[0.6rem] mt-0.5 flex-shrink-0"
-                        style={{ color: pkg.accent }}
-                      >
-                        ✓
-                      </span>
-                      <span
-                        className="text-[0.78rem] leading-[1.5]"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        {f}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => openForm(pkg.id as FormData["type"])}
-                  className="w-full py-3 rounded-pill font-sans font-medium text-[0.85rem] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                  style={
-                    pkg.featured
-                      ? {
-                          background: "var(--coffee-latte)",
-                          color: "var(--coffee-dark)",
-                        }
-                      : {
-                          background: "transparent",
-                          border: `1px solid ${pkg.accentBorder}`,
-                          color: pkg.accent,
-                        }
-                  }
-                >
-                  Daftar Sekarang
-                </button>
-              </div>
-            ))}
+                ))}
           </div>
 
           <p
@@ -1434,6 +1460,7 @@ export default function IgPartnershipSection() {
             setShowForm(false);
             setSelectedTier("");
           }}
+          packages={packages}
         />
       )}
     </>

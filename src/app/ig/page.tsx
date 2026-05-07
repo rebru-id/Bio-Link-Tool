@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 // ── JSON-LD ───────────────────────────────────────────────────────────────
 function buildJsonLd() {
   const products = getAllProducts();
-  const baseUrl = "https://rebru.id";
+  const baseUrl = "https://rebru.vercel.app";
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",

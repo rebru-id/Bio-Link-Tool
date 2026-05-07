@@ -9,6 +9,8 @@ import {
   getCatalogByCategory,
   formatCurrency,
 } from "@/lib/products";
+import { useCart } from "@/context/CartContext";
+import { useToast } from "@/components/ui/Toast";
 import type { UIProduct } from "@/types/product";
 
 // ─── Sprint 4: ganti dengan async fetch dari Supabase ─────────────────────
@@ -36,6 +38,26 @@ function ProductDrawer({
   const [selectedVariant, setSelectedVariant] = useState(
     product.variants[0] ?? null,
   );
+  const [qty, setQty] = useState(1);
+  const { addItem } = useCart();
+  const toast = useToast();
+
+  const isRnD = product.badge === "In R&D";
+
+  function handleAddToCart() {
+    if (!selectedVariant) return;
+    addItem({
+      product_id: product.id,
+      name: product.name,
+      variant: selectedVariant.label,
+      price: selectedVariant.price,
+      qty,
+      accent: product.accent,
+    });
+    toast.show(`${product.name} · ${selectedVariant.label} ditambahkan`);
+    // Tutup drawer setelah add — IgFloatingCartBar akan slide-up
+    setTimeout(() => onClose(), 300);
+  }
 
   return (
     <div
@@ -233,43 +255,144 @@ function ProductDrawer({
           </div>
         )}
 
-        {/* CTA */}
-        <div className="flex gap-3">
-          {selectedVariant ? (
-            <a
-              href="https://wa.me/6285237390994?text=Hi%20Rebru%2C%20saya%20ingin%20memesan%20" /* ganti nomor WA */
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 py-3.5 rounded-pill font-sans font-medium text-[0.88rem] text-center transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-              style={{
-                background: product.accent,
-                color: "var(--coffee-dark)",
-              }}
-            >
-              Order via WhatsApp
-            </a>
+        {/* ── Qty selector + CTA ── */}
+        <div className="mt-2">
+          {selectedVariant && !isRnD ? (
+            <>
+              {/* Qty control */}
+              <div className="flex items-center justify-between mb-4">
+                <p
+                  className="font-mono text-[0.6rem] tracking-[0.15em] uppercase"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Jumlah
+                </p>
+                <div
+                  className="flex items-center rounded-pill overflow-hidden"
+                  style={{ border: "1px solid var(--border-default)" }}
+                >
+                  <button
+                    onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    disabled={qty <= 1}
+                    className="w-9 h-9 flex items-center justify-center transition-all duration-200"
+                    style={{
+                      color:
+                        qty <= 1
+                          ? "var(--border-strong)"
+                          : "var(--text-secondary)",
+                      opacity: qty <= 1 ? 0.4 : 1,
+                      cursor: qty <= 1 ? "not-allowed" : "pointer",
+                    }}
+                    aria-label="Kurangi jumlah"
+                  >
+                    <i className="fas fa-minus text-[0.55rem]" />
+                  </button>
+                  <span
+                    className="w-9 text-center font-mono text-[0.88rem]"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {qty}
+                  </span>
+                  <button
+                    onClick={() => setQty((q) => Math.min(99, q + 1))}
+                    disabled={qty >= 99}
+                    className="w-9 h-9 flex items-center justify-center transition-all duration-200"
+                    style={{
+                      color:
+                        qty >= 99
+                          ? "var(--border-strong)"
+                          : "var(--text-secondary)",
+                      opacity: qty >= 99 ? 0.4 : 1,
+                      cursor: qty >= 99 ? "not-allowed" : "pointer",
+                    }}
+                    aria-label="Tambah jumlah"
+                  >
+                    <i className="fas fa-plus text-[0.55rem]" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Subtotal */}
+              {qty > 1 && (
+                <div
+                  className="flex items-center justify-between px-4 py-2.5 rounded-xl mb-4"
+                  style={{
+                    background: product.accentBg,
+                    border: `1px solid ${product.accentBorder}`,
+                  }}
+                >
+                  <span
+                    className="font-mono text-[0.6rem] tracking-[0.12em] uppercase"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Total {qty} item
+                  </span>
+                  <span
+                    className="font-display font-semibold text-[1.1rem]"
+                    style={{ color: product.accent }}
+                  >
+                    {formatCurrency(selectedVariant.price * qty)}
+                  </span>
+                </div>
+              )}
+
+              {/* CTA: Add to Cart */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleAddToCart}
+                  className="flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-pill font-sans font-medium text-[0.88rem] transition-all duration-300 active:scale-[0.98]"
+                  style={{
+                    background: product.accent,
+                    color: "#1a0f0a",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.opacity =
+                      "0.9";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.opacity = "1";
+                  }}
+                >
+                  <i className="fas fa-shopping-basket text-[0.82rem]" />
+                  Tambah ke Keranjang
+                </button>
+                <button
+                  onClick={onClose}
+                  className="px-4 py-3.5 rounded-pill transition-all duration-200"
+                  style={{
+                    border: "1px solid var(--border-default)",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  <i className="fas fa-times text-sm" />
+                </button>
+              </div>
+            </>
           ) : (
-            <button
-              disabled
-              className="flex-1 py-3.5 rounded-pill font-sans font-medium text-[0.85rem] text-center opacity-40 cursor-not-allowed"
-              style={{
-                background: "var(--border-default)",
-                color: "var(--text-muted)",
-              }}
-            >
-              Coming Soon
-            </button>
+            // R&D — tombol Coming Soon
+            <div className="flex gap-3">
+              <button
+                disabled
+                className="flex-1 py-3.5 rounded-pill font-sans font-medium text-[0.85rem] text-center opacity-40 cursor-not-allowed"
+                style={{
+                  background: "var(--border-default)",
+                  color: "var(--text-muted)",
+                }}
+              >
+                Coming Soon
+              </button>
+              <button
+                onClick={onClose}
+                className="px-4 py-3.5 rounded-pill transition-all duration-200"
+                style={{
+                  border: "1px solid var(--border-default)",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <i className="fas fa-times text-sm" />
+              </button>
+            </div>
           )}
-          <button
-            onClick={onClose}
-            className="px-4 py-3.5 rounded-pill transition-all duration-200"
-            style={{
-              border: "1px solid var(--border-default)",
-              color: "var(--text-muted)",
-            }}
-          >
-            <i className="fas fa-times text-sm" />
-          </button>
         </div>
       </div>
     </div>

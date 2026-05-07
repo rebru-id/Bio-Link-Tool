@@ -19,18 +19,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 "use client";
 
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useInView } from "@/hooks/useInView";
 import {
   insertPartnerApplication,
   getPackages,
+  fetchKotaList,
+  fetchKecamatanByKota,
+  fetchKelurahanByKecamatan,
   type PartnerApplicationPayload,
 } from "@/services/partnership";
-import {
-  getKotaList,
-  getKecamatanByKota,
-  getKelurahanByKecamatan,
-} from "@/lib/location-data";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -591,17 +589,36 @@ function Step3Location({
     {},
   );
 
-  // ── Derived location data ──────────────────────────────────────────────────
-  const kotaList = useMemo(() => getKotaList(), []);
-  const kecamatanList = useMemo(
-    () =>
-      form.kota && form.kota !== "lain" ? getKecamatanByKota(form.kota) : [],
-    [form.kota],
-  );
-  const kelurahanList = useMemo(
-    () => (form.kecamatan ? getKelurahanByKecamatan(form.kecamatan) : []),
-    [form.kecamatan],
-  );
+  // ── Location data dari Supabase (async) ───────────────────────────────────
+  const [kotaList, setKotaList] = useState<
+    { value: string; label: string; aktif: boolean }[]
+  >([]);
+  const [kecamatanList, setKecamatanList] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [kelurahanList, setKelurahanList] = useState<
+    { value: string; label: string }[]
+  >([]);
+
+  // Load kota saat Step3 mount
+  useEffect(() => {
+    fetchKotaList().then(setKotaList);
+  }, []);
+
+  // Load kecamatan saat kota berubah
+  useEffect(() => {
+    setKecamatanList([]);
+    setKelurahanList([]);
+    if (!form.kota || form.kota === "lain") return;
+    fetchKecamatanByKota(form.kota).then(setKecamatanList);
+  }, [form.kota]);
+
+  // Load kelurahan saat kecamatan berubah
+  useEffect(() => {
+    setKelurahanList([]);
+    if (!form.kecamatan || !form.kota || form.kota === "lain") return;
+    fetchKelurahanByKecamatan(form.kecamatan, form.kota).then(setKelurahanList);
+  }, [form.kecamatan, form.kota]);
 
   const selectedKota = kotaList.find((k) => k.value === form.kota);
   const isKotaLain = form.kota === "lain";

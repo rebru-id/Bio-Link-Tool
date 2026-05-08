@@ -1,48 +1,40 @@
 // src/services/partnership.ts
 // ─────────────────────────────────────────────────────────────────────────────
-// REBRU IG Landing — Partnership Service Layer (Sprint 4 — PRODUCTION FIXED)
+// REBRU IG Landing — Partnership Service Layer (Sprint 4 — CLEAN)
 //
-// ROOT CAUSE FIX:
-//   Di Next.js 14 + Vercel, NEXT_PUBLIC_ vars hanya terjamin tersedia
-//   di browser runtime — BUKAN saat module di-evaluate oleh bundler.
-//   Solusi: hardcode fallback untuk NEXT_PUBLIC_ yang memang bukan secret.
+// ⚠️  PLATFORM-SPECIFIC — JANGAN MASUKKAN KE sync-shared.ps1
+// File ini adalah service layer khusus bio-link (bio.rebru.id).
+// source_platform = "ig_landing" (berbeda dengan website = "website")
 //
-// KEAMANAN:
-//   NEXT_PUBLIC_SUPABASE_ANON_KEY adalah anon/public key — by design
-//   boleh terekspos di client. Keamanan data dijaga oleh RLS di Supabase,
-//   bukan oleh kerahasiaan key ini. Ini adalah arsitektur resmi Supabase.
-//   Ref: https://supabase.com/docs/guides/auth/row-level-security
+// PERUBAHAN dari versi sebelumnya:
+//   - Hapus import dari @/lib/location-data (dead import — tidak dipakai)
+//   - Hapus resolveKotaLabel, resolveKecamatanLabel, resolveKelurahanLabel
+//     (dead code — selalu return input karena slug/nama sudah sama sejak
+//      fetchKotaList() diubah ke Supabase dengan value = nama langsung)
+//   - insertPartnerApplication sekarang langsung pakai data.city / kecamatan
+//     / kelurahan tanpa perlu resolve — nilai sudah berupa nama, bukan slug
 //
-// VERCEL — wajib dilakukan setelah push:
-//   1. Pastikan env vars scope mencakup "Development" (bukan hanya Production+Preview)
-//   2. Trigger Redeploy manual setelah env vars diubah
+// ARSITEKTUR:
+//   - Lazy singleton pattern: createClient dipanggil saat runtime, bukan
+//     module level — aman di Next.js + Vercel production
+//   - Hardcode fallback: NEXT_PUBLIC_ anon key aman di-hardcode (bukan secret)
+//     Keamanan dijaga RLS di Supabase. Ref: supabase.com/docs/guides/auth/rls
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import {
-  getKotaList,
-  getKecamatanByKota,
-  getKelurahanByKecamatan,
-} from "@/lib/location-data";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Konstanta — nilai identik dengan .env.local
-// Anon key aman di-hardcode karena:
-//   - Bukan service_role key (yang memiliki akses penuh)
-//   - Dilindungi RLS: anon hanya bisa INSERT partner_applications
-//   - Nilai ini sudah ter-bundle ke JS client bundle oleh Next.js
-//     saat ada NEXT_PUBLIC_ prefix — hardcode hanya memastikan konsistensi
+// Supabase Client — Lazy Singleton
 // ─────────────────────────────────────────────────────────────────────────────
+
 const SUPABASE_URL = "https://mubzwqkhhhittibstugh.supabase.co";
 const SUPABASE_ANON =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11Ynp3cWtoaGhpdHRpYnN0dWdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMTA5NjYsImV4cCI6MjA5MDY4Njk2Nn0.C_YqDM0OFAVc9zww5afq9S0po2n7KzZGW9HhzNsMcrE";
 
-// Lazy singleton — createClient dipanggil dalam fungsi, bukan module level
 let _supabase: SupabaseClient | null = null;
 
 function getSupabase(): SupabaseClient {
   if (_supabase) return _supabase;
-  // env var → fallback ke konstanta (keduanya nilai yang sama)
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? SUPABASE_ANON;
   _supabase = createClient(url, key);
@@ -60,10 +52,10 @@ export interface PartnerApplicationPayload {
   email: string;
   jenis_usaha: string;
   volume_limbah: string;
-  city: string;
+  city: string; // nama kota langsung (bukan slug) — dari fetchKotaList()
   kotaCustom?: string;
-  kecamatan: string;
-  kelurahan: string;
+  kecamatan: string; // nama kecamatan langsung — dari fetchKecamatanByKota()
+  kelurahan: string; // nama kelurahan langsung — dari fetchKelurahanByKecamatan()
   alamat: string;
   type: "kontributor" | "dampak" | "strategis";
   message?: string;
@@ -74,65 +66,42 @@ export interface ServiceResult {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helper: slug → label (dari location-data.ts)
-// ─────────────────────────────────────────────────────────────────────────────
-
-function resolveKotaLabel(slug: string): string {
-  if (slug === "lain") return "Lainnya";
-  return getKotaList().find((k) => k.value === slug)?.label ?? slug;
-}
-
-function resolveKecamatanLabel(kecSlug: string, kotaSlug: string): string {
-  return (
-    getKecamatanByKota(kotaSlug).find((k) => k.value === kecSlug)?.label ??
-    kecSlug
-  );
-}
-
-function resolveKelurahanLabel(kelSlug: string, kecSlug: string): string {
-  return (
-    getKelurahanByKecamatan(kecSlug).find((k) => k.value === kelSlug)?.label ??
-    kelSlug
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // insertPartnerApplication
+//
+// data.city / kecamatan / kelurahan sudah berupa nama langsung (bukan slug)
+// sejak dropdown dialihkan ke Supabase ref_ tables via fetchKotaList() dll.
+// Tidak perlu resolve helper lagi.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function insertPartnerApplication(
   data: PartnerApplicationPayload,
 ): Promise<ServiceResult> {
   try {
-    const isCustomKota = data.city === "lain" || !data.city;
-
-    const payload = {
-      pic_name: data.name.trim(),
-      organization: data.organization.trim(),
-      phone: data.phone.trim(),
-      email: data.email.trim().toLowerCase(),
-      package_type: data.type,
-      jenis_usaha: data.jenis_usaha,
-      volume_limbah: data.volume_limbah,
-      kota_nama: isCustomKota
-        ? (data.kotaCustom?.trim() ?? "Lainnya")
-        : resolveKotaLabel(data.city),
-      kota_custom: isCustomKota ? (data.kotaCustom?.trim() ?? null) : null,
-      kecamatan_nama: isCustomKota
-        ? data.kecamatan
-        : resolveKecamatanLabel(data.kecamatan, data.city),
-      kelurahan_nama: isCustomKota
-        ? data.kelurahan
-        : resolveKelurahanLabel(data.kelurahan, data.kecamatan),
-      alamat_detail: data.alamat.trim(),
-      message: data.message?.trim() || null,
-      status: "pending" as const,
-      source_platform: "ig_landing" as const,
-    };
+    const isCustomKota =
+      data.city === "lain" || data.city === "Kota / Kab. Lain" || !data.city;
 
     const { error } = await getSupabase()
       .from("partner_applications")
-      .insert(payload);
+      .insert({
+        pic_name: data.name.trim(),
+        organization: data.organization.trim(),
+        phone: data.phone.trim(),
+        email: data.email.trim().toLowerCase(),
+        package_type: data.type,
+        jenis_usaha: data.jenis_usaha,
+        volume_limbah: data.volume_limbah,
+        // Nama kota: pakai kotaCustom jika "lainnya", langsung pakai data.city jika tidak
+        kota_nama: isCustomKota
+          ? (data.kotaCustom?.trim() ?? "Lainnya")
+          : data.city,
+        kota_custom: isCustomKota ? (data.kotaCustom?.trim() ?? null) : null,
+        kecamatan_nama: data.kecamatan.trim(),
+        kelurahan_nama: data.kelurahan.trim() || null,
+        alamat_detail: data.alamat.trim(),
+        message: data.message?.trim() || null,
+        status: "pending" as const,
+        source_platform: "ig_landing" as const,
+      });
 
     if (error) throw new Error(error.message);
     return { error: null };
@@ -143,7 +112,7 @@ export async function insertPartnerApplication(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// getPackages — pengganti PACKAGES static dari packages.ts
+// getPackages
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getPackages() {
@@ -166,7 +135,7 @@ export async function getPackages() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// getProducts — pengganti getAllProducts() static dari products.ts
+// getProducts / getFeaturedProducts
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getProducts() {
@@ -206,8 +175,7 @@ export async function getFeaturedProducts() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LOKASI DROPDOWN — fetch dari Supabase ref_ tables
-// Menggantikan getKotaList(), getKecamatanByKota(), getKelurahanByKecamatan()
-// dari @/lib/location-data yang sebelumnya dipakai di Step3Location
+// Dipakai oleh Step3Location di IgPartnershipSection
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function fetchKotaList(): Promise<
@@ -225,7 +193,7 @@ export async function fetchKotaList(): Promise<
       return [];
     }
     return (data ?? []).map((r) => ({
-      value: r.nama, // value = nama kota (label langsung, bukan slug)
+      value: r.nama,
       label: r.nama,
       aktif: r.aktif,
     }));
@@ -251,10 +219,7 @@ export async function fetchKecamatanByKota(
       console.error("[partnership.ts] fetchKecamatanByKota:", error.message);
       return [];
     }
-    return (data ?? []).map((r) => ({
-      value: r.nama,
-      label: r.nama,
-    }));
+    return (data ?? []).map((r) => ({ value: r.nama, label: r.nama }));
   } catch (err) {
     console.error("[partnership.ts] fetchKecamatanByKota exception:", err);
     return [];
@@ -281,10 +246,7 @@ export async function fetchKelurahanByKecamatan(
       );
       return [];
     }
-    return (data ?? []).map((r) => ({
-      value: r.nama,
-      label: r.nama,
-    }));
+    return (data ?? []).map((r) => ({ value: r.nama, label: r.nama }));
   } catch (err) {
     console.error("[partnership.ts] fetchKelurahanByKecamatan exception:", err);
     return [];

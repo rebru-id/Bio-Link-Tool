@@ -1,12 +1,19 @@
 // src/lib/products.ts
 // ─────────────────────────────────────────────────────────────────────────────
-// SINGLE SOURCE OF TRUTH — identik dengan website Rebru (src/lib/products.ts)
+// Single source of truth untuk semua data produk Rebru
 //
-// Sprint 4: ganti fungsi-fungsi ini dengan Supabase fetch.
-// Kedua platform (website + IG landing) akan otomatis sinkron karena
-// fetch dari database yang sama.
+// SEBELUMNYA data tersebar di:
+//   - ProductsFeaturedSection.tsx  → const BIOCHAR
+//   - ProductsCatalogSection.tsx   → const CATALOG_PRODUCTS
 //
-// Contoh Sprint 4:
+// SEKARANG semua komponen dan halaman import dari sini:
+//   import { getFeaturedProduct, getCatalogProducts, getProductBySlug }
+//     from "@/lib/products"
+//
+// Sprint 4: ganti isi fungsi-fungsi di bawah dengan Supabase fetch.
+//   Komponen tidak perlu diubah sama sekali — hanya file ini.
+//
+//   Contoh Sprint 4:
 //   export async function getAllProducts() {
 //     const { data } = await supabase
 //       .from("products")
@@ -16,34 +23,23 @@
 //   }
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { UIProduct } from "@/types/product";
-
-export function slugify(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
-}
-
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-}
+import { slugify } from "@/utils";
+import type { UIProduct } from "@/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Data — sinkron 100% dengan website
+// Data — semua produk Rebru
+// Untuk tambah produk: tambah object baru di array ALL_PRODUCTS
+// Untuk edit harga: ubah di variants[].price
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ALL_PRODUCTS: UIProduct[] = [
+  // ── 1. Biochar — Featured product ────────────────────────────────────────
   {
     id: "biochar-001",
     name: "Biochar",
     tagline:
       "Biochar adalah bukti nyata bahwa ampas kopi dapat memberi manfaat jauh melampaui meja café.",
-    price: null,
+    price: null, // tidak ada harga flat — harga per-varian
     unit: "kg",
     category: "soil-amendment",
     icon: "fa-seedling",
@@ -60,7 +56,8 @@ const ALL_PRODUCTS: UIProduct[] = [
     ],
     specs: {
       beratBersih: "1000 gram (1 Kg)",
-      bahan: "Ampas Kopi (Upcycled, 80%), Biomassa Pilihan Lain (20%), diproses melalui Pirolisis.",
+      bahan:
+        "Ampas Kopi (Upcycled, 80%), Biomassa Pilihan Lain (20%), diproses melalui Pirolisis.",
       varian: "1 Kg, 5 Kg, 10 Kg, dan 25 Kg",
       fitur: [
         "Kapasitas Tukar Kation (KTK) Tinggi",
@@ -79,6 +76,8 @@ const ALL_PRODUCTS: UIProduct[] = [
       icon: "fa-seedling",
     },
   },
+
+  // ── 2. Compost ────────────────────────────────────────────────────────────
   {
     id: "compost-001",
     name: "Compost",
@@ -100,8 +99,13 @@ const ALL_PRODUCTS: UIProduct[] = [
     ],
     specs: {
       beratBersih: "1000 gram (1 Kg)",
-      bahan: "Ampas kopi terfermentasi, dicampur sisa organik restoran dan bahan pendukung kompos.",
-      fitur: ["Kaya Nitrogen & Mikroba Tanah", "Memperbaiki Struktur Tanah", "100% Organik"],
+      bahan:
+        "Ampas kopi terfermentasi, dicampur sisa organik restoran dan bahan pendukung kompos.",
+      fitur: [
+        "Kaya Nitrogen & Mikroba Tanah",
+        "Memperbaiki Struktur Tanah",
+        "100% Organik",
+      ],
     },
     impact: {
       stat: "1 Kg Compost",
@@ -109,6 +113,8 @@ const ALL_PRODUCTS: UIProduct[] = [
       icon: "fa-seedling",
     },
   },
+
+  // ── 3. Bio-briquettes ─────────────────────────────────────────────────────
   {
     id: "briquette-001",
     name: "Bio-briquettes",
@@ -129,8 +135,14 @@ const ALL_PRODUCTS: UIProduct[] = [
     ],
     specs: {
       beratBersih: "1000 gram (1 Kg)",
-      bahan: "Ampas kopi dipadatkan dengan pengikat alami, bebas bahan kimia sintetis.",
-      fitur: ["Pembakaran Lebih Bersih", "Kalori Tinggi", "Asap Minimal", "Pengganti Arang Kayu"],
+      bahan:
+        "Ampas kopi dipadatkan dengan pengikat alami, bebas bahan kimia sintetis.",
+      fitur: [
+        "Pembakaran Lebih Bersih",
+        "Kalori Tinggi",
+        "Asap Minimal",
+        "Pengganti Arang Kayu",
+      ],
     },
     impact: {
       stat: "1 Kg Bio-briquettes",
@@ -138,6 +150,8 @@ const ALL_PRODUCTS: UIProduct[] = [
       icon: "fa-fire",
     },
   },
+
+  // ── 4. Scented Candle — EcoGoods ─────────────────────────────────────────
   {
     id: "candle-001",
     name: "Scented Candle",
@@ -157,8 +171,13 @@ const ALL_PRODUCTS: UIProduct[] = [
     ],
     specs: {
       beratBersih: "— (placeholder)",
-      bahan: "Campuran lilin kedelai dan ampas kopi upcycled dengan aroma kopi alami.",
-      fitur: ["Aroma Kopi Alami", "Bahan Ramah Lingkungan", "Kemasan Biodegradable"],
+      bahan:
+        "Campuran lilin kedelai dan ampas kopi upcycled dengan aroma kopi alami.",
+      fitur: [
+        "Aroma Kopi Alami",
+        "Bahan Ramah Lingkungan",
+        "Kemasan Biodegradable",
+      ],
     },
     impact: {
       stat: "1 Scented Candle",
@@ -166,6 +185,8 @@ const ALL_PRODUCTS: UIProduct[] = [
       icon: "fa-fire-flame-curved",
     },
   },
+
+  // ── 5. Coaster — EcoGoods ────────────────────────────────────────────────
   {
     id: "coaster-001",
     name: "Coaster",
@@ -194,6 +215,8 @@ const ALL_PRODUCTS: UIProduct[] = [
       icon: "fa-circle",
     },
   },
+
+  // ── 6. Soap — EcoGoods ───────────────────────────────────────────────────
   {
     id: "soap-001",
     name: "Coffee Soap",
@@ -215,7 +238,12 @@ const ALL_PRODUCTS: UIProduct[] = [
     specs: {
       beratBersih: "— (placeholder)",
       bahan: "Ampas kopi, minyak kelapa, minyak zaitun, dan pewangi alami.",
-      fitur: ["Eksfoliasi Alami", "Menghilangkan Bau", "Bebas Bahan Kimia Keras", "Cocok untuk Semua Jenis Kulit"],
+      fitur: [
+        "Eksfoliasi Alami",
+        "Menghilangkan Bau",
+        "Bebas Bahan Kimia Keras",
+        "Cocok untuk Semua Jenis Kulit",
+      ],
     },
     impact: {
       stat: "1 Coffee Soap",
@@ -223,6 +251,8 @@ const ALL_PRODUCTS: UIProduct[] = [
       icon: "fa-soap",
     },
   },
+
+  // ── 7. Diffuser — EcoGoods R&D ───────────────────────────────────────────
   {
     id: "diffuser-001",
     name: "Coffee Diffuser",
@@ -239,7 +269,8 @@ const ALL_PRODUCTS: UIProduct[] = [
     variants: [],
     specs: {
       beratBersih: "—",
-      bahan: "Ekstrak kopi dan bahan alami. Masih dalam tahap pengembangan formulasi.",
+      bahan:
+        "Ekstrak kopi dan bahan alami. Masih dalam tahap pengembangan formulasi.",
       fitur: ["Aroma Kopi Tahan Lama", "Tanpa Alkohol", "Refillable"],
     },
     impact: {
@@ -248,6 +279,8 @@ const ALL_PRODUCTS: UIProduct[] = [
       icon: "fa-wind",
     },
   },
+
+  // ── 8. Car Fragrance — EcoGoods R&D ─────────────────────────────────────
   {
     id: "carfrag-001",
     name: "Car Fragrance",
@@ -264,8 +297,13 @@ const ALL_PRODUCTS: UIProduct[] = [
     variants: [],
     specs: {
       beratBersih: "—",
-      bahan: "Ampas kopi terproses dan minyak esensial alami. Dalam tahap uji ketahanan aroma.",
-      fitur: ["Aroma Kopi Alami", "Tidak Mengandung Bahan Kimia Berbahaya", "Bentuk Compact"],
+      bahan:
+        "Ampas kopi terproses dan minyak esensial alami. Dalam tahap uji ketahanan aroma.",
+      fitur: [
+        "Aroma Kopi Alami",
+        "Tidak Mengandung Bahan Kimia Berbahaya",
+        "Bentuk Compact",
+      ],
     },
     impact: {
       stat: "Target",
@@ -273,6 +311,8 @@ const ALL_PRODUCTS: UIProduct[] = [
       icon: "fa-car",
     },
   },
+
+  // ── 9. Raw Materials — R&D ────────────────────────────────────────────────
   {
     id: "rawmat-001",
     name: "Raw Materials",
@@ -289,8 +329,13 @@ const ALL_PRODUCTS: UIProduct[] = [
     variants: [],
     specs: {
       beratBersih: "—",
-      bahan: "Ampas kopi terkompresi dengan polimer biodegradable. Masih dalam tahap pengembangan dan uji material.",
-      fitur: ["Gelas Biodegradable", "Blok Bangunan Ringan", "Packaging Sustainable"],
+      bahan:
+        "Ampas kopi terkompresi dengan polimer biodegradable. Masih dalam tahap pengembangan dan uji material.",
+      fitur: [
+        "Gelas Biodegradable",
+        "Blok Bangunan Ringan",
+        "Packaging Sustainable",
+      ],
     },
     impact: {
       stat: "Target",
@@ -300,20 +345,78 @@ const ALL_PRODUCTS: UIProduct[] = [
   },
 ];
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper functions
+// Sprint 4: ubah fungsi-fungsi ini menjadi async + Supabase fetch
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Semua produk — dipakai untuk JSON-LD, sitemap, dan generateStaticParams
+ */
 export function getAllProducts(): UIProduct[] {
   return ALL_PRODUCTS;
 }
 
+/**
+ * Produk featured — semua yang isFeatured: true (Biochar, Compost, Bio-briquettes)
+ * Dipakai oleh Featured carousel di ProductsFeaturedSection
+ * Sprint 4: query products WHERE is_featured = true ORDER BY sort_order
+ */
 export function getFeaturedProducts(): UIProduct[] {
   return ALL_PRODUCTS.filter((p) => p.isFeatured === true);
 }
 
+/**
+ * Backward compatible — masih dipakai jika ada kode lama yang import ini
+ * Sprint 4: hapus dan ganti dengan getFeaturedProducts()
+ */
+export function getFeaturedProduct(): UIProduct {
+  return ALL_PRODUCTS.find((p) => p.isFeatured) ?? ALL_PRODUCTS[0];
+}
+
+/**
+ * Produk untuk catalog grid — semua yang tidak featured
+ * Sprint 4: query products WHERE is_featured = false AND is_active = true
+ */
 export function getCatalogProducts(): UIProduct[] {
   return ALL_PRODUCTS.filter((p) => !p.isFeatured);
 }
 
+/**
+ * Produk catalog berdasarkan kategori — dipakai oleh tab filter
+ * category: "all" | "soil-amendment" | "energy" | "ecogoods" | "raw-materials"
+ * Sprint 4: query products WHERE category = category AND is_featured = false
+ */
 export function getCatalogByCategory(category: string): UIProduct[] {
   const catalog = getCatalogProducts();
   if (category === "all") return catalog;
   return catalog.filter((p) => p.category === category);
+}
+
+/**
+ * Produk berdasarkan slug URL
+ * Sprint 4: query products WHERE slug = slug
+ */
+export function getProductBySlug(slug: string): UIProduct | null {
+  return ALL_PRODUCTS.find((p) => slugify(p.name) === slug) ?? null;
+}
+
+/**
+ * Semua slug yang valid — dipakai oleh generateStaticParams di [slug]/page.tsx
+ */
+export function getAllProductSlugs(): string[] {
+  return ALL_PRODUCTS.map((p) => slugify(p.name));
+}
+
+/**
+ * Produk terkait — produk dari kategori yang sama, kecuali yang sedang dilihat
+ * Sprint 4: query produk dengan category yang sama
+ */
+export function getRelatedProducts(currentId: string): UIProduct[] {
+  const current = ALL_PRODUCTS.find((p) => p.id === currentId);
+  if (!current)
+    return ALL_PRODUCTS.filter((p) => p.id !== currentId).slice(0, 3);
+  return ALL_PRODUCTS.filter(
+    (p) => p.id !== currentId && p.category === current.category,
+  ).slice(0, 3);
 }

@@ -1,30 +1,162 @@
 // src/types/index.ts
 // ─────────────────────────────────────────────────────────────────────────────
-// Barrel export — single entry point untuk semua tipe di folder ini.
-//
-// Kenapa file ini dibutuhkan:
-//   CartContext.tsx mengimport dari "@/types" (bukan "@/types/cart").
-//   Next.js + TypeScript meresolvasi "@/types" ke salah satu dari:
-//     1. src/types.ts        → tidak ada
-//     2. src/types/index.ts  → FILE INI ← yang dibutuhkan
-//   Tanpa index.ts, build gagal dengan "Cannot find module '@/types'".
-//
-// Pattern ini disebut "barrel export" — standar di project TypeScript skala
-// besar agar consumer tidak perlu tahu struktur internal folder types/.
-//
-// Cara menambah tipe baru:
-//   1. Buat file baru di src/types/, misal: src/types/user.ts
-//   2. Tambahkan satu baris di sini:
-//      export type { User, UserRole } from "./user";
+// REBRU — Shared TypeScript Types
+// Maps directly to the Supabase database schema
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Cart system — CartItem dipakai oleh CartContext, CartDrawer, order service
-export type { CartItem } from "./cart";
+// ── User & Auth ──────────────────────────────────────────────────────────────
 
-// Product system — UIProduct, variant, specs, impact untuk halaman produk
-export type {
-  UIProduct,
-  ProductVariant,
-  ProductSpecs,
-  ProductImpact,
-} from "./product";
+// MODIFIED: tambah "collector" — diperlukan untuk halaman /collector
+// Tidak breaking: semua ROLE_ICONS dan switch/case yang ada tetap valid
+// karena TypeScript hanya menuntut exhaustiveness jika ada exhaustive check.
+export type UserRole = "admin" | "mitra" | "government" | "collector";
+
+export interface UserProfile {
+  id: string;
+  user_id: string; // FK → auth.users
+  name: string;
+  phone?: string;
+  role: UserRole;
+  created_at: string;
+}
+
+// ── Partnership ───────────────────────────────────────────────────────────────
+
+export type PartnerType = "supplier" | "collector" | "reseller";
+export type ApplicationStatus = "pending" | "approved" | "rejected";
+export type MitraType = "collector" | "processor" | "distributor";
+
+export interface PartnerApplication {
+  id: string;
+  name: string;
+  organization: string;
+  phone: string;
+  type: PartnerType;
+  status: ApplicationStatus;
+  created_at: string;
+}
+
+export interface Mitra {
+  id: string;
+  user_id?: string;
+  name: string;
+  type: MitraType;
+  location: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+// ── Waste & Supply ────────────────────────────────────────────────────────────
+
+export type WasteType =
+  | "coffee"
+  | "rice_husk"
+  | "corn_husk"
+  | "cocoa"
+  | "coconut"
+  | "biomass"
+  | "organic";
+export type CollectionStatus = "pending" | "processed";
+export type ConversionMethod = "biochar" | "compost" | "briquette";
+
+export interface WasteCollection {
+  id: string;
+  mitra_id: string;
+  waste_type: WasteType;
+  weight_kg: number;
+  collection_date: string;
+  status: CollectionStatus;
+  created_at: string;
+}
+
+export interface Bioconversion {
+  id: string;
+  collection_id: string;
+  method: ConversionMethod;
+  output_product_id?: string;
+  input_weight: number;
+  output_weight: number;
+  carbon_reduction: number;
+  created_at: string;
+}
+
+// ── Products ──────────────────────────────────────────────────────────────────
+
+export interface Product {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  unit: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+// ── Orders & Transactions ─────────────────────────────────────────────────────
+
+export type OrderChannel = "web" | "whatsapp";
+export type OrderStatus = "pending" | "paid" | "shipped" | "done";
+
+export interface Order {
+  id: string;
+  user_id?: string;
+  customer_name: string;
+  customer_phone: string;
+  channel: OrderChannel;
+  status: OrderStatus;
+  total_amount: number;
+  created_at: string;
+}
+
+export interface OrderItem {
+  id: string;
+  order_id: string;
+  product_id: string;
+  quantity: number;
+  price: number;
+  subtotal: number;
+}
+
+// ── Impact ────────────────────────────────────────────────────────────────────
+
+export interface ImpactLog {
+  id: string;
+  collection_id: string;
+  co2_saved: number;
+  waste_saved: number;
+  created_at: string;
+}
+
+// ── Aggregated Views (Supabase Views) ─────────────────────────────────────────
+
+export interface GlobalStats {
+  total_waste_collected: number;
+  total_co2_saved: number;
+  total_products_sold: number;
+  total_partners: number;
+}
+
+export interface MonthlyRecap {
+  month: string;
+  waste_collected: number;
+  co2_saved: number;
+  revenue: number;
+}
+
+// ── Communication ─────────────────────────────────────────────────────────────
+
+export type ContactType = "general" | "partnership";
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  phone?: string;
+  message: string;
+  type: ContactType;
+  created_at: string;
+}
+
+// ── UI Layer Types ────────────────────────────────────────────────────────────
+
+export * from "./product";
+export * from "./cart";

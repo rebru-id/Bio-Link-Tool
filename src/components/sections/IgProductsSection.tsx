@@ -7,8 +7,8 @@ import {
   getAllProducts,
   getFeaturedProducts,
   getCatalogByCategory,
-  formatCurrency,
 } from "@/lib/products";
+import { formatCurrency } from "@/utils";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/components/ui/Toast";
 import type { UIProduct } from "@/types/product";

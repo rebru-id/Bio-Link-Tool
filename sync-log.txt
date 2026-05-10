@@ -1,0 +1,77 @@
+
+============================================================
+  REBRU SYNC v3 [DRY RUN] -- 2026-05-10 10:18:10
+  Dari : D:\rebrustudio.ID\Project\Website\src
+  Ke   : D:\rebrustudio.ID\Project\IG-Website\src
+  File : 15 shared files
+============================================================
+  [PREVIEW] context\CartContext.tsx
+  [PREVIEW] types\cart.ts
+  [WARN]  types\product.ts -- bio-link lebih baru dari Website
+  [PREVIEW] types\product.ts
+  [WARN]  types\index.ts -- bio-link lebih baru dari Website
+  [PREVIEW] types\index.ts
+  [WARN]  lib\products.ts -- bio-link lebih baru dari Website
+  [PREVIEW] lib\products.ts
+  [MKDIR] Buat folder: src\utils
+  [PREVIEW] utils\format.ts
+  [MKDIR] Buat folder: src\utils
+  [PREVIEW] utils\helpers.ts
+  [MKDIR] Buat folder: src\utils
+  [PREVIEW] utils\slug.ts
+  [MKDIR] Buat folder: src\utils
+  [PREVIEW] utils\index.ts
+  [WARN]  services\order.ts -- bio-link lebih baru dari Website
+  [PREVIEW] services\order.ts
+  [MKDIR] Buat folder: src\constants
+  [PREVIEW] constants\config.ts
+  [WARN]  hooks\useInView.ts -- bio-link lebih baru dari Website
+  [PREVIEW] hooks\useInView.ts
+  [PREVIEW] components\ui\Accordion.tsx
+  [PREVIEW] components\ui\Toast.tsx
+  [PREVIEW] components\cart\CartDrawer.tsx
+
+  Hasil: 15 berhasil  0 dilewati  5 peringatan  0 error
+------------------------------------------------------------
+  Langkah berikutnya:
+  1. npx tsc --noEmit       (zero error sebelum lanjut)
+  2. npm run dev            (test di http://localhost:3000/ig)
+  3. git add . && git commit -m sync && git push
+============================================================
+
+============================================================
+  REBRU SYNC v3  -- 2026-05-10 10:22:17
+  Dari : D:\rebrustudio.ID\Project\Website\src
+  Ke   : D:\rebrustudio.ID\Project\IG-Website\src
+  File : 15 shared files
+============================================================
+  [OK]      context\CartContext.tsx
+  [OK]      types\cart.ts
+  [WARN]  types\product.ts -- bio-link lebih baru dari Website
+  [OK]      types\product.ts
+  [WARN]  types\index.ts -- bio-link lebih baru dari Website
+  [OK]      types\index.ts
+  [WARN]  lib\products.ts -- bio-link lebih baru dari Website
+  [OK]      lib\products.ts
+  [MKDIR] Buat folder: src\utils
+  [OK]      utils\format.ts
+  [OK]      utils\helpers.ts
+  [OK]      utils\slug.ts
+  [OK]      utils\index.ts
+  [WARN]  services\order.ts -- bio-link lebih baru dari Website
+  [OK]      services\order.ts
+  [MKDIR] Buat folder: src\constants
+  [OK]      constants\config.ts
+  [WARN]  hooks\useInView.ts -- bio-link lebih baru dari Website
+  [OK]      hooks\useInView.ts
+  [OK]      components\ui\Accordion.tsx
+  [OK]      components\ui\Toast.tsx
+  [OK]      components\cart\CartDrawer.tsx
+
+  Hasil: 15 berhasil  0 dilewati  5 peringatan  0 error
+------------------------------------------------------------
+  Langkah berikutnya:
+  1. npx tsc --noEmit       (zero error sebelum lanjut)
+  2. npm run dev            (test di http://localhost:3000/ig)
+  3. git add . && git commit -m sync && git push
+============================================================

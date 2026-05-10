@@ -1,20 +1,38 @@
-// file: src/app/ig/page.tsx
+// src/app/ig/page.tsx
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH: Import slugify dipindah dari "@/lib/products" ke "@/utils"
+//
+// Alasan:
+//   Website's lib/products.ts mengimport slugify dari @/utils secara internal
+//   dan TIDAK mengekspornya. Setelah sync, bio-link's products.ts menggunakan
+//   versi Website — sehingga `import { slugify } from "@/lib/products"` broken.
+//
+//   Solusi: import langsung dari @/utils (sumber canonicalnya).
+//   Output slugify identik — terkonfirmasi via unit test untuk semua 9 produk.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import type { Metadata } from "next";
 
-import IgHeroSection from "@/components/sections/IgHeroSection";
-import IgProblemSection from "@/components/sections/IgProblemSection";
-import IgSystemSection from "@/components/sections/IgSystemSection";
-import IgRoleGateSection from "@/components/sections/IgRoleGateSection";
-import IgProductsSection from "@/components/sections/IgProductsSection";
-import IgImpactSection from "@/components/sections/IgImpactSection";
+import IgHeroSection        from "@/components/sections/IgHeroSection";
+import IgProblemSection     from "@/components/sections/IgProblemSection";
+import IgSystemSection      from "@/components/sections/IgSystemSection";
+import IgRoleGateSection    from "@/components/sections/IgRoleGateSection";
+import IgProductsSection    from "@/components/sections/IgProductsSection";
+import IgImpactSection      from "@/components/sections/IgImpactSection";
 import IgPartnershipSection from "@/components/sections/IgPartnershipSection";
-import IgCtaSection from "@/components/sections/IgCtaSection";
-import IgFooter from "@/components/layout/IgFooter";
-import SectionNavDots from "@/components/ui/SectionNavDots";
-import ScrollToTop from "@/components/ui/ScrollToTop";
-import { getAllProducts, slugify } from "@/lib/products";
+import IgCtaSection         from "@/components/sections/IgCtaSection";
+import IgFooter             from "@/components/layout/IgFooter";
+import SectionNavDots       from "@/components/ui/SectionNavDots";
+import ScrollToTop          from "@/components/ui/ScrollToTop";
 
-// ── Metadata ──────────────────────────────────────────────────────────────
+// ── PATCH: Pisahkan import — slugify sekarang dari @/utils ──────────────────
+import { getAllProducts }   from "@/lib/products";
+import { slugify }         from "@/utils";
+// ── SEBELUMNYA (hapus baris ini jika masih ada): ────────────────────────────
+// import { getAllProducts, slugify } from "@/lib/products";   ← JANGAN dipakai
+// ────────────────────────────────────────────────────────────────────────────
+
+// ── Metadata ──────────────────────────────────────────────────────────────────
 export const metadata: Metadata = {
   title: "Rebru — Turning Coffee Waste into Scalable Climate Impact",
   description:
@@ -29,10 +47,11 @@ export const metadata: Metadata = {
   },
 };
 
-// ── JSON-LD ───────────────────────────────────────────────────────────────
+// ── JSON-LD ───────────────────────────────────────────────────────────────────
 function buildJsonLd() {
-  const products = getAllProducts();
-  const baseUrl = "https://rebru.vercel.app";
+  const products  = getAllProducts();
+  const baseUrl   = "https://rebru.vercel.app";
+
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -68,7 +87,7 @@ function buildJsonLd() {
   };
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function IgLandingPage() {
   return (
     <>

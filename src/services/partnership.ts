@@ -27,7 +27,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 // Supabase Client — Lazy Singleton
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SUPABASE_URL = "https://mubzwqkhhhittibstugh.supabase.co";
+const SUPABASE_URL  = "https://mubzwqkhhhittibstugh.supabase.co";
 const SUPABASE_ANON =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11Ynp3cWtoaGhpdHRpYnN0dWdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMTA5NjYsImV4cCI6MjA5MDY4Njk2Nn0.C_YqDM0OFAVc9zww5afq9S0po2n7KzZGW9HhzNsMcrE";
 
@@ -46,19 +46,19 @@ function getSupabase(): SupabaseClient {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface PartnerApplicationPayload {
-  name: string;
+  name:         string;
   organization: string;
-  phone: string;
-  email: string;
-  jenis_usaha: string;
+  phone:        string;
+  email:        string;
+  jenis_usaha:  string;
   volume_limbah: string;
-  city: string; // nama kota langsung (bukan slug) — dari fetchKotaList()
-  kotaCustom?: string;
-  kecamatan: string; // nama kecamatan langsung — dari fetchKecamatanByKota()
-  kelurahan: string; // nama kelurahan langsung — dari fetchKelurahanByKecamatan()
-  alamat: string;
-  type: "kontributor" | "dampak" | "strategis";
-  message?: string;
+  city:         string;   // nama kota langsung (bukan slug) — dari fetchKotaList()
+  kotaCustom?:  string;
+  kecamatan:    string;   // nama kecamatan langsung — dari fetchKecamatanByKota()
+  kelurahan:    string;   // nama kelurahan langsung — dari fetchKelurahanByKecamatan()
+  alamat:       string;
+  type:         "kontributor" | "dampak" | "strategis";
+  message?:     string;
 }
 
 export interface ServiceResult {
@@ -77,29 +77,28 @@ export async function insertPartnerApplication(
   data: PartnerApplicationPayload,
 ): Promise<ServiceResult> {
   try {
-    const isCustomKota =
-      data.city === "lain" || data.city === "Kota / Kab. Lain" || !data.city;
+    const isCustomKota = data.city === "lain"
+      || data.city === "Kota / Kab. Lain"
+      || !data.city;
 
     const { error } = await getSupabase()
       .from("partner_applications")
       .insert({
-        pic_name: data.name.trim(),
-        organization: data.organization.trim(),
-        phone: data.phone.trim(),
-        email: data.email.trim().toLowerCase(),
-        package_type: data.type,
-        jenis_usaha: data.jenis_usaha,
-        volume_limbah: data.volume_limbah,
+        pic_name:       data.name.trim(),
+        organization:   data.organization.trim(),
+        phone:          data.phone.trim(),
+        email:          data.email.trim().toLowerCase(),
+        package_type:   data.type,
+        jenis_usaha:    data.jenis_usaha,
+        volume_limbah:  data.volume_limbah,
         // Nama kota: pakai kotaCustom jika "lainnya", langsung pakai data.city jika tidak
-        kota_nama: isCustomKota
-          ? (data.kotaCustom?.trim() ?? "Lainnya")
-          : data.city,
-        kota_custom: isCustomKota ? (data.kotaCustom?.trim() ?? null) : null,
+        kota_nama:      isCustomKota ? (data.kotaCustom?.trim() ?? "Lainnya") : data.city,
+        kota_custom:    isCustomKota ? (data.kotaCustom?.trim() ?? null)      : null,
         kecamatan_nama: data.kecamatan.trim(),
         kelurahan_nama: data.kelurahan.trim() || null,
-        alamat_detail: data.alamat.trim(),
-        message: data.message?.trim() || null,
-        status: "pending" as const,
+        alamat_detail:  data.alamat.trim(),
+        message:        data.message?.trim() || null,
+        status:         "pending"    as const,
         source_platform: "ig_landing" as const,
       });
 
@@ -240,10 +239,7 @@ export async function fetchKelurahanByKecamatan(
       .order("nama");
 
     if (error) {
-      console.error(
-        "[partnership.ts] fetchKelurahanByKecamatan:",
-        error.message,
-      );
+      console.error("[partnership.ts] fetchKelurahanByKecamatan:", error.message);
       return [];
     }
     return (data ?? []).map((r) => ({ value: r.nama, label: r.nama }));

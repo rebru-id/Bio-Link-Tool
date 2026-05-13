@@ -12,23 +12,19 @@
 
 import type { Metadata } from "next";
 
-import IgHeroSection from "@/components/sections/IgHeroSection";
-import IgProblemSection from "@/components/sections/IgProblemSection";
-import IgSystemSection from "@/components/sections/IgSystemSection";
-import IgRoleGateSection from "@/components/sections/IgRoleGateSection";
-import IgProductsSection from "@/components/sections/IgProductsSection";
-import IgImpactSection from "@/components/sections/IgImpactSection";
+import IgHeroSection        from "@/components/sections/IgHeroSection";
+import IgProblemSection     from "@/components/sections/IgProblemSection";
+import IgSystemSection      from "@/components/sections/IgSystemSection";
+import IgRoleGateSection    from "@/components/sections/IgRoleGateSection";
+import IgProductsSection    from "@/components/sections/IgProductsSection";
+import IgImpactSection      from "@/components/sections/IgImpactSection";
 import IgPartnershipSection from "@/components/sections/IgPartnershipSection";
-import IgCtaSection from "@/components/sections/IgCtaSection";
-import IgFooter from "@/components/layout/IgFooter";
-import SectionNavDots from "@/components/ui/SectionNavDots";
-import ScrollToTop from "@/components/ui/ScrollToTop";
+import IgCtaSection         from "@/components/sections/IgCtaSection";
+import IgFooter             from "@/components/layout/IgFooter";
+import SectionNavDots       from "@/components/ui/SectionNavDots";
+import ScrollToTop          from "@/components/ui/ScrollToTop";
 
-import {
-  getAllProducts,
-  getFeaturedProducts,
-  getCatalogProducts,
-} from "@/lib/products";
+import { getAllProducts, getFeaturedProducts, getCatalogProducts } from "@/lib/products";
 
 // ── Metadata ──────────────────────────────────────────────────────────────────
 export const metadata: Metadata = {
@@ -48,7 +44,7 @@ export const metadata: Metadata = {
 // ── JSON-LD — async, pakai product.slug langsung ──────────────────────────────
 async function buildJsonLd() {
   const products = await getAllProducts();
-  const baseUrl = "https://rebru.id";
+  const baseUrl  = "https://rebru.id";
 
   return {
     "@context": "https://schema.org",

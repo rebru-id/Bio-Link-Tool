@@ -1,40 +1,54 @@
-# sync-shared-final.ps1
-# Rebru -- Shared File Sync (Final v3 - ASCII Fixed)
-# Menyinkronisasi 15 file canonical dari Website ke Bio-link
+# sync-shared.ps1
+# Rebru -- Shared File Sync (Sprint 4A Update)
+# Menyinkronisasi 17 file canonical dari Website ke Bio-link
+#
+# CHANGELOG Sprint 4A:
+#   + lib/mappers.ts       -- mapper Supabase row -> UIProduct
+#   + lib/supabase/server.ts -- Supabase server client (untuk async page.tsx)
 #
 # Cara pakai:
 #   cd D:\rebrustudio.ID\Project\IG-Website
 #   powershell -ExecutionPolicy Bypass -File .\sync-shared-final.ps1
-#
-# Preview tanpa copy:
-#   powershell -ExecutionPolicy Bypass -File .\sync-shared-final.ps1 -DryRun
 
 param(
   [switch]$DryRun
 )
 
-# -- Path Konfigurasi --
 $WebsiteRoot = "D:\rebrustudio.ID\Project\Website\src"
 $BioLinkRoot = "D:\rebrustudio.ID\Project\IG-Website\src"
 $LogFile     = "D:\rebrustudio.ID\Project\IG-Website\sync-log.txt"
 
-# -- Daftar 15 File yang Disinkronisasi --
 $SharedFiles = @(
-  @{ From = "context\CartContext.tsx";         To = "context\CartContext.tsx"         },
-  @{ From = "types\cart.ts";                   To = "types\cart.ts"                   },
-  @{ From = "types\product.ts";                To = "types\product.ts"                },
-  @{ From = "types\index.ts";                  To = "types\index.ts"                  },
-  @{ From = "lib\products.ts";                 To = "lib\products.ts"                 },
-  @{ From = "utils\format.ts";                 To = "utils\format.ts"                 },
-  @{ From = "utils\helpers.ts";                To = "utils\helpers.ts"                },
-  @{ From = "utils\slug.ts";                   To = "utils\slug.ts"                   },
-  @{ From = "utils\index.ts";                  To = "utils\index.ts"                  },
-  @{ From = "services\order.ts";               To = "services\order.ts"               },
-  @{ From = "constants\config.ts";             To = "constants\config.ts"             },
-  @{ From = "hooks\useInView.ts";              To = "hooks\useInView.ts"              },
-  @{ From = "components\ui\Accordion.tsx";     To = "components\ui\Accordion.tsx"     },
-  @{ From = "components\ui\Toast.tsx";         To = "components\ui\Toast.tsx"         },
-  @{ From = "components\cart\CartDrawer.tsx";  To = "components\cart\CartDrawer.tsx"  }
+  # -- Cart System --
+  @{ From = "context\CartContext.tsx";           To = "context\CartContext.tsx"           },
+  @{ From = "types\cart.ts";                     To = "types\cart.ts"                     },
+
+  # -- Product Types & Data --
+  @{ From = "types\product.ts";                  To = "types\product.ts"                  },
+  @{ From = "types\index.ts";                    To = "types\index.ts"                    },
+  @{ From = "lib\products.ts";                   To = "lib\products.ts"                   },
+  @{ From = "lib\mappers.ts";                    To = "lib\mappers.ts"                    },
+
+  # -- Supabase Clients --
+  @{ From = "lib\supabase\server.ts";            To = "lib\supabase\server.ts"            },
+
+  # -- Utils --
+  @{ From = "utils\format.ts";                   To = "utils\format.ts"                   },
+  @{ From = "utils\helpers.ts";                  To = "utils\helpers.ts"                  },
+  @{ From = "utils\slug.ts";                     To = "utils\slug.ts"                     },
+  @{ From = "utils\index.ts";                    To = "utils\index.ts"                    },
+
+  # -- Services --
+  @{ From = "services\order.ts";                 To = "services\order.ts"                 },
+
+  # -- Config & Hooks --
+  @{ From = "constants\config.ts";               To = "constants\config.ts"               },
+  @{ From = "hooks\useInView.ts";                To = "hooks\useInView.ts"                },
+
+  # -- Shared UI Components --
+  @{ From = "components\ui\Accordion.tsx";       To = "components\ui\Accordion.tsx"       },
+  @{ From = "components\ui\Toast.tsx";           To = "components\ui\Toast.tsx"           },
+  @{ From = "components\cart\CartDrawer.tsx";    To = "components\cart\CartDrawer.tsx"    }
 )
 
 # -- Header --
@@ -43,7 +57,7 @@ $modeLabel = if ($DryRun) { "[DRY RUN]" } else { "" }
 
 $header = "
 ============================================================
-  REBRU SYNC v3 $modeLabel -- $timestamp
+  REBRU SYNC (Sprint 4A) $modeLabel -- $timestamp
   Dari : $WebsiteRoot
   Ke   : $BioLinkRoot
   File : $($SharedFiles.Count) shared files
@@ -52,7 +66,6 @@ $header = "
 Write-Host $header -ForegroundColor Cyan
 Add-Content -Path $LogFile -Value $header
 
-# -- Validasi Path --
 if (-not (Test-Path $WebsiteRoot)) {
   $msg = "  [ERROR] Website src tidak ditemukan: $WebsiteRoot"
   Write-Host $msg -ForegroundColor Red
@@ -67,11 +80,7 @@ if (-not (Test-Path $BioLinkRoot)) {
   exit 1
 }
 
-# -- Sync Loop --
-$ok      = 0
-$skipped = 0
-$warned  = 0
-$errors  = 0
+$ok = 0; $skipped = 0; $warned = 0; $errors = 0
 
 foreach ($file in $SharedFiles) {
   $src    = Join-Path $WebsiteRoot $file.From
@@ -125,14 +134,13 @@ foreach ($file in $SharedFiles) {
   }
 }
 
-# -- Summary --
 $summary = "
   Hasil: $ok berhasil  $skipped dilewati  $warned peringatan  $errors error
 ------------------------------------------------------------
   Langkah berikutnya:
   1. npx tsc --noEmit       (zero error sebelum lanjut)
-  2. npm run dev            (test di http://localhost:3000/ig)
-  3. git add . && git commit -m sync && git push
+  2. npm run dev            (verifikasi produk dari Supabase)
+  3. git add . && git commit -m sprint4a && git push
 ============================================================"
 
 $color = if ($errors -gt 0) { "Red" } elseif ($warned -gt 0) { "Yellow" } else { "Cyan" }

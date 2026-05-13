@@ -105,3 +105,69 @@
   2. npm run dev            (test di http://localhost:3000/ig)
   3. git add . && git commit -m sync && git push
 ============================================================
+
+============================================================
+  REBRU SYNC (Sprint 4A) [DRY RUN] -- 2026-05-12 15:21:34
+  Dari : D:\rebrustudio.ID\Project\Website\src
+  Ke   : D:\rebrustudio.ID\Project\IG-Website\src
+  File : 17 shared files
+============================================================
+  [PREVIEW] context\CartContext.tsx
+  [PREVIEW] types\cart.ts
+  [PREVIEW] types\product.ts
+  [PREVIEW] types\index.ts
+  [PREVIEW] lib\products.ts
+  [PREVIEW] lib\mappers.ts
+  [MKDIR] Buat folder: src\lib\supabase
+  [PREVIEW] lib\supabase\server.ts
+  [PREVIEW] utils\format.ts
+  [PREVIEW] utils\helpers.ts
+  [PREVIEW] utils\slug.ts
+  [PREVIEW] utils\index.ts
+  [PREVIEW] services\order.ts
+  [PREVIEW] constants\config.ts
+  [PREVIEW] hooks\useInView.ts
+  [PREVIEW] components\ui\Accordion.tsx
+  [PREVIEW] components\ui\Toast.tsx
+  [PREVIEW] components\cart\CartDrawer.tsx
+
+  Hasil: 17 berhasil  0 dilewati  0 peringatan  0 error
+------------------------------------------------------------
+  Langkah berikutnya:
+  1. npx tsc --noEmit       (zero error sebelum lanjut)
+  2. npm run dev            (verifikasi produk dari Supabase)
+  3. git add . && git commit -m sprint4a && git push
+============================================================
+
+============================================================
+  REBRU SYNC (Sprint 4A)  -- 2026-05-12 15:28:20
+  Dari : D:\rebrustudio.ID\Project\Website\src
+  Ke   : D:\rebrustudio.ID\Project\IG-Website\src
+  File : 17 shared files
+============================================================
+  [OK]      context\CartContext.tsx
+  [OK]      types\cart.ts
+  [OK]      types\product.ts
+  [OK]      types\index.ts
+  [OK]      lib\products.ts
+  [OK]      lib\mappers.ts
+  [MKDIR] Buat folder: src\lib\supabase
+  [OK]      lib\supabase\server.ts
+  [OK]      utils\format.ts
+  [OK]      utils\helpers.ts
+  [OK]      utils\slug.ts
+  [OK]      utils\index.ts
+  [OK]      services\order.ts
+  [OK]      constants\config.ts
+  [OK]      hooks\useInView.ts
+  [OK]      components\ui\Accordion.tsx
+  [OK]      components\ui\Toast.tsx
+  [OK]      components\cart\CartDrawer.tsx
+
+  Hasil: 17 berhasil  0 dilewati  0 peringatan  0 error
+------------------------------------------------------------
+  Langkah berikutnya:
+  1. npx tsc --noEmit       (zero error sebelum lanjut)
+  2. npm run dev            (verifikasi produk dari Supabase)
+  3. git add . && git commit -m sprint4a && git push
+============================================================

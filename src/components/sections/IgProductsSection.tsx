@@ -3,19 +3,10 @@
 
 import { useState } from "react";
 import { useInView } from "@/hooks/useInView";
-import {
-  getAllProducts,
-  getFeaturedProducts,
-  getCatalogByCategory,
-} from "@/lib/products";
 import { formatCurrency } from "@/utils";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/components/ui/Toast";
 import type { UIProduct } from "@/types/product";
-
-// ─── Sprint 4: ganti dengan async fetch dari Supabase ─────────────────────
-const ALL = getAllProducts();
-const FEATURED = getFeaturedProducts();
 
 const TABS = [
   { key: "all", label: "All" },
@@ -572,15 +563,22 @@ function CatalogCard({
 }
 
 // ── Main Section ───────────────────────────────────────────────────────────
-export default function IgProductsSection() {
+interface IgProductsSectionProps {
+  featuredProducts: UIProduct[];
+  catalogProducts: UIProduct[];
+}
+export default function IgProductsSection({
+  featuredProducts,
+  catalogProducts,
+}: IgProductsSectionProps) {
   const { ref, inView } = useInView(0.05);
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [openProduct, setOpenProduct] = useState<UIProduct | null>(null);
 
-  const catalogProducts =
+  const filteredProducts =
     activeTab === "all"
-      ? ALL.filter((p) => !p.isFeatured)
-      : ALL.filter((p) => !p.isFeatured && p.category === activeTab);
+      ? catalogProducts
+      : catalogProducts.filter((p) => p.category === activeTab);
 
   return (
     <>
@@ -648,7 +646,7 @@ export default function IgProductsSection() {
             Featured Products
           </p>
           <div className="grid grid-cols-3 gap-3 mb-10">
-            {FEATURED.map((p, i) => (
+            {featuredProducts.map((p, i) => (
               <FeaturedCard
                 key={p.id}
                 product={p}
@@ -696,7 +694,7 @@ export default function IgProductsSection() {
 
           {/* Catalog grid */}
           <div className="grid grid-cols-2 gap-3">
-            {catalogProducts.map((p, i) => (
+            {filteredProducts.map((p, i) => (
               <CatalogCard
                 key={p.id}
                 product={p}
@@ -705,7 +703,7 @@ export default function IgProductsSection() {
                 onOpen={setOpenProduct}
               />
             ))}
-            {catalogProducts.length === 0 && (
+            {filteredProducts.length === 0 && (
               <div className="col-span-2 text-center py-8">
                 <p
                   className="font-mono text-[0.7rem] tracking-[0.12em] uppercase"

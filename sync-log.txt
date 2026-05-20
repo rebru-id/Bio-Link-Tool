@@ -171,3 +171,137 @@
   2. npm run dev            (verifikasi produk dari Supabase)
   3. git add . && git commit -m sprint4a && git push
 ============================================================
+
+============================================================
+  REBRU SYNC (Sprint 4B)  -- 2026-05-19 10:47:54
+  Dari : D:\rebrustudio.ID\Project\Website\src
+  Ke   : D:\rebrustudio.ID\Project\IG-Website\src
+  File : 18 shared files
+============================================================
+  [OK]      context\CartContext.tsx
+  [OK]      types\cart.ts
+  [OK]      types\product.ts
+  [OK]      types\index.ts
+  [OK]      lib\products.ts
+  [OK]      lib\mappers.ts
+  [OK]      lib\supabase\server.ts
+  [OK]      utils\format.ts
+  [OK]      utils\helpers.ts
+  [OK]      utils\slug.ts
+  [OK]      utils\index.ts
+  [OK]      services\order.ts
+  [OK]      services\order-supabase.ts
+  [OK]      constants\config.ts
+  [OK]      hooks\useInView.ts
+  [OK]      components\ui\Accordion.tsx
+  [OK]      components\ui\Toast.tsx
+  [OK]      components\cart\CartDrawer.tsx
+
+  Hasil: 18 berhasil  0 dilewati  0 peringatan  0 error
+------------------------------------------------------------
+  Langkah berikutnya:
+  1. npx tsc --noEmit       (zero error sebelum lanjut)
+  2. npm run dev            (test checkout + cek tabel orders)
+  3. git add . && git commit -m sprint4b && git push
+============================================================
+
+============================================================
+  REBRU SYNC (Sprint 4B)  -- 2026-05-19 11:06:00
+  Dari : D:\rebrustudio.ID\Project\Website\src
+  Ke   : D:\rebrustudio.ID\Project\IG-Website\src
+  File : 19 shared files
+============================================================
+  [OK]      context\CartContext.tsx
+  [OK]      types\cart.ts
+  [OK]      types\product.ts
+  [OK]      types\index.ts
+  [OK]      lib\products.ts
+  [OK]      lib\mappers.ts
+  [OK]      lib\supabase\server.ts
+  [OK]      lib\supabase\server.ts
+  [OK]      utils\format.ts
+  [OK]      utils\helpers.ts
+  [OK]      utils\slug.ts
+  [OK]      utils\index.ts
+  [OK]      services\order.ts
+  [OK]      services\order-supabase.ts
+  [OK]      constants\config.ts
+  [OK]      hooks\useInView.ts
+  [OK]      components\ui\Accordion.tsx
+  [OK]      components\ui\Toast.tsx
+  [OK]      components\cart\CartDrawer.tsx
+
+  Hasil: 19 berhasil  0 dilewati  0 peringatan  0 error
+------------------------------------------------------------
+  Langkah berikutnya:
+  1. npx tsc --noEmit       (zero error sebelum lanjut)
+  2. npm run dev            (test checkout + cek tabel orders)
+  3. git add . && git commit -m sprint4b && git push
+============================================================
+
+============================================================
+  REBRU SYNC (Sprint 4B)  -- 2026-05-19 17:18:40
+  Dari : D:\rebrustudio.ID\Project\Website\src
+  Ke   : D:\rebrustudio.ID\Project\IG-Website\src
+  File : 19 shared files
+============================================================
+  [OK]      context\CartContext.tsx
+  [OK]      types\cart.ts
+  [OK]      types\product.ts
+  [OK]      types\index.ts
+  [OK]      lib\products.ts
+  [OK]      lib\mappers.ts
+  [OK]      lib\supabase\server.ts
+  [OK]      lib\supabase\server.ts
+  [OK]      utils\format.ts
+  [OK]      utils\helpers.ts
+  [OK]      utils\slug.ts
+  [OK]      utils\index.ts
+  [OK]      services\order.ts
+  [OK]      services\order-supabase.ts
+  [OK]      constants\config.ts
+  [OK]      hooks\useInView.ts
+  [OK]      components\ui\Accordion.tsx
+  [OK]      components\ui\Toast.tsx
+  [OK]      components\cart\CartDrawer.tsx
+
+  Hasil: 19 berhasil  0 dilewati  0 peringatan  0 error
+------------------------------------------------------------
+  Langkah berikutnya:
+  1. npx tsc --noEmit       (zero error sebelum lanjut)
+  2. npm run dev            (test checkout + cek tabel orders)
+  3. git add . && git commit -m sprint4b && git push
+============================================================
+
+============================================================
+  REBRU SYNC (Sprint 4B)  -- 2026-05-20 17:26:50
+  Dari : D:\rebrustudio.ID\Project\Website\src
+  Ke   : D:\rebrustudio.ID\Project\IG-Website\src
+  File : 18 shared files
+============================================================
+  [OK]      context\CartContext.tsx
+  [OK]      types\cart.ts
+  [OK]      types\product.ts
+  [OK]      types\index.ts
+  [OK]      lib\products.ts
+  [OK]      lib\mappers.ts
+  [OK]      lib\supabase\server.ts
+  [OK]      utils\format.ts
+  [OK]      utils\helpers.ts
+  [OK]      utils\slug.ts
+  [OK]      utils\index.ts
+  [OK]      services\order.ts
+  [OK]      services\order-supabase.ts
+  [OK]      constants\config.ts
+  [OK]      hooks\useInView.ts
+  [OK]      components\ui\Accordion.tsx
+  [OK]      components\ui\Toast.tsx
+  [OK]      components\cart\CartDrawer.tsx
+
+  Hasil: 18 berhasil  0 dilewati  0 peringatan  0 error
+------------------------------------------------------------
+  Langkah berikutnya:
+  1. npx tsc --noEmit       (zero error sebelum lanjut)
+  2. npm run dev            (test checkout + cek tabel orders)
+  3. git add . && git commit -m sprint4b && git push
+============================================================

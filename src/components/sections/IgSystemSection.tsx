@@ -9,7 +9,7 @@ const FLOW_STEPS = [
     icon: "fa-mug-hot",
     label: "Cafés",
     desc: "Ampas kopi dikumpulkan dari jaringan café dan bisnis mitra di Makassar",
-    color: "#b07d56",
+    color: "#7ba7cc",
   },
   {
     step: "02",
@@ -23,7 +23,7 @@ const FLOW_STEPS = [
     icon: "fa-industry",
     label: "Processing",
     desc: "Pirolisis termal, fermentasi organik, dan kompresi mengubah limbah jadi material baru",
-    color: "#d4783a",
+    color: "#ba7517",
   },
   {
     step: "04",
@@ -64,7 +64,7 @@ export default function IgSystemSection() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 80% 50% at 50% 100%, rgba(196,149,106,0.05) 0%, transparent 70%)",
+            "radial-gradient(ellipse 80% 50% at 50% 100%, rgba(56,189,248,0.05) 0%, transparent 70%)",
         }}
       />
 
@@ -209,7 +209,7 @@ export default function IgSystemSection() {
                 icon: "fa-seedling",
                 color: "var(--forest-sage)",
               },
-              { label: "Thermal (Biochar)", icon: "fa-fire", color: "#d4783a" },
+              { label: "Thermal (Biochar)", icon: "fa-fire", color: "#ba7517" },
               {
                 label: "Product Dev",
                 icon: "fa-flask",

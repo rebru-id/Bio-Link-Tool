@@ -8,7 +8,7 @@ const PROBLEMS = [
     stat: "Jutaan ton",
     title: "Limbah Terbuang Setiap Hari",
     body: "Ampas kopi dari café, restoran, dan kantor hampir seluruhnya berakhir di tempat pembuangan tanpa jejak.",
-    color: "#d4783a",
+    color: "#ba7517",
   },
   {
     icon: "fa-chart-line",

@@ -28,8 +28,8 @@ export default function IgFooter() {
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center"
             style={{
-              background: "rgba(196,149,106,0.1)",
-              border: "1px solid rgba(196,149,106,0.2)",
+              background: "rgba(56,189,248,0.1)",
+              border: "1px solid rgba(56,189,248,0.2)",
             }}
           >
             <i

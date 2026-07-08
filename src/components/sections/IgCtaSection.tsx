@@ -9,8 +9,8 @@ const ACTIONS = [
     desc: "Kelola limbah, ukur dampak.",
     href: "#partnership",
     color: "var(--coffee-latte)",
-    bg: "rgba(196,149,106,0.1)",
-    border: "rgba(196,149,106,0.25)",
+    bg: "rgba(56,189,248,0.1)",
+    border: "rgba(56,189,248,0.25)",
   },
   {
     icon: "fa-rotate",
@@ -26,9 +26,9 @@ const ACTIONS = [
     label: "Explore the Platform",
     desc: "Lihat website lengkap.",
     href: "https://rebru.id/",
-    color: "#c8a84b",
-    bg: "rgba(200,168,75,0.08)",
-    border: "rgba(200,168,75,0.2)",
+    color: "#ef9f27",
+    bg: "rgba(239,159,39,0.08)",
+    border: "rgba(239,159,39,0.2)",
   },
 ];
 
@@ -51,7 +51,7 @@ export default function IgCtaSection() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 90% 60% at 50% 100%, rgba(196,149,106,0.07) 0%, transparent 70%)",
+            "radial-gradient(ellipse 90% 60% at 50% 100%, rgba(56,189,248,0.07) 0%, transparent 70%)",
         }}
       />
 
@@ -177,7 +177,7 @@ export default function IgCtaSection() {
               icon: "fab fa-instagram",
               label: "@rebru.id",
               href: "https://instagram.com/rebru.id",
-              color: "#b07d56",
+              color: "#7ba7cc",
             },
             {
               icon: "fab fa-whatsapp",

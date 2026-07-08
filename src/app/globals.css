@@ -2,12 +2,13 @@
 /* ─────────────────────────────────────────────────────────────────
    Bio-link selalu DARK MODE — tidak ada theme toggling.
    Tokens di sini selaras dengan [data-theme="dark"] di Website globals.css
-   
-   DIUPDATE:
-   - Font variables sekarang dari next/font via root-layout.tsx
-     (--font-display, --font-sans, --font-mono diinject otomatis)
-   - Tambah token yang sebelumnya missing: --section-py, --border-strong,
-     --bg-elevated (sudah ada), section spacing utilities
+
+   DIUPDATE — Dark Blue Reskin:
+   - Palet warna diselaraskan dengan token dark-mode website utama
+     (Navy & Blue system dari src/app/globals.css CycleChain/rebru.id)
+   - Hanya NILAI warna yang berubah — nama variabel & struktur tetap sama
+     agar semua komponen yang sudah memakai var(--coffee-latte) dsb
+     otomatis ikut berubah tanpa perlu diedit satu per satu.
    ───────────────────────────────────────────────────────────────── */
 
 @tailwind base;
@@ -16,41 +17,46 @@
 
 /* ── Design Tokens — Dark Only ───────────────────────────────────── */
 :root {
-  /* Brand palette — identik dengan Website */
-  --coffee-dark:   #2c1a0e;
-  --coffee-medium: #4a2c1a;
-  --coffee-latte:  #c4956a;
-  --forest-sage:   #7aab7e;
-  --cream:         #f5f0e8;
-  --parchment:     #ede6d8;
+  /* Brand palette — diselaraskan dengan Navy & Blue dark-mode Website */
+  --coffee-dark: #060e1a; /* was #2c1a0e — navy-950, dipakai sbg teks di atas accent */
+  --coffee-medium: #163356; /* was #4a2c1a — navy-600, mid-tone gradient/scrollbar */
+  --coffee-latte: #38bdf8; /* was #c4956a — navy-300, accent utama "dark blue" */
+  --forest-sage: #7aab7e; /* dipertahankan — aksen hijau sekunder, konsisten dgn brand teal Website */
+  --cream: #eaf3fb; /* was #f5f0e8 — light tint kebiruan */
+  --parchment: #e4edf7; /* was #ede6d8 — light tint kebiruan */
 
-  /* Background system */
-  --bg-primary:  #0d0a07;
-  --bg-surface:  #141009;
-  --bg-elevated: #1c1610;
-  --bg-card:     #201a12;
+  /* Background system — navy-950 / 900 / 800 dari Website dark-mode */
+  --bg-primary: #060e1a; /* was #0d0a07 — navy-950 */
+  --bg-surface: #0a1628; /* was #141009 — navy-900 */
+  --bg-elevated: #0f2340; /* was #1c1610 — navy-800 */
+  --bg-card: #122a4a; /* was #201a12 — sedikit lebih terang dari elevated */
 
-  /* Text */
-  --text-primary:   #f0ebe2;
-  --text-secondary: #b8a99a;
-  --text-muted:     #7a6e63;
+  /* Text — token teks dark-mode Website */
+  --text-primary: #e2f0ff; /* was #f0ebe2 */
+  --text-secondary: #7ba7cc; /* was #b8a99a */
+  --text-muted: #4a6a8a; /* was #7a6e63 */
 
-  /* Borders */
-  --border-default: rgba(255, 255, 255, 0.08);
-  --border-subtle:  rgba(255, 255, 255, 0.04);
-  --border-strong:  rgba(255, 255, 255, 0.14);  /* ← sebelumnya missing */
+  /* Borders — ditinting biru, mengikuti nuansa accent baru */
+  --border-default: rgba(56, 189, 248, 0.1); /* was rgba(255,255,255,0.08) */
+  --border-subtle: rgba(56, 189, 248, 0.05); /* was rgba(255,255,255,0.04) */
+  --border-strong: rgba(56, 189, 248, 0.2); /* was rgba(255,255,255,0.14) */
 
-  /* Gradients */
-  --hero-gradient: linear-gradient(160deg, #0d0a07 0%, #141009 40%, #1a1208 100%);
-  --ring-border:   rgba(196, 149, 106, 0.12);
-  --ring-shadow:   0 0 60px rgba(196, 149, 106, 0.04);
-  --ring-inner-1:  rgba(196, 149, 106, 0.07);
-  --ring-inner-2:  rgba(196, 149, 106, 0.04);
+  /* Gradients — navy hero gradient dari Website dark-mode */
+  --hero-gradient: linear-gradient(
+    160deg,
+    #060e1a 0%,
+    #0a1628 40%,
+    #0f2340 100%
+  );
+  --ring-border: rgba(56, 189, 248, 0.16); /* was rgba(196,149,106,0.12) */
+  --ring-shadow: 0 0 60px rgba(56, 189, 248, 0.07); /* was rgba(196,149,106,0.04) */
+  --ring-inner-1: rgba(56, 189, 248, 0.09); /* was rgba(196,149,106,0.07) */
+  --ring-inner-2: rgba(56, 189, 248, 0.05); /* was rgba(196,149,106,0.04) */
 
-  /* Section spacing — ← sebelumnya missing, dipakai IgProductsSection */
-  --section-py:    4rem;
+  /* Section spacing — tidak berubah */
+  --section-py: 4rem;
   --section-py-lg: 6rem;
-  --section-px:    1.5rem;
+  --section-px: 1.5rem;
 }
 
 /* ── Base Reset ──────────────────────────────────────────────────── */
@@ -96,46 +102,98 @@ body {
 
 /* ── Animations ──────────────────────────────────────────────────── */
 @keyframes ring-float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50%       { transform: translateY(-12px) rotate(3deg); }
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(3deg);
+  }
 }
 
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.6; }
-  50%       { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 @keyframes particle-drift {
-  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0.6; }
-  50%  { transform: translateY(-40px) translateX(20px) scale(1.1); opacity: 0.3; }
-  100% { transform: translateY(-80px) translateX(-10px) scale(0.8); opacity: 0; }
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-40px) translateX(20px) scale(1.1);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-80px) translateX(-10px) scale(0.8);
+    opacity: 0;
+  }
 }
 
 @keyframes count-up {
-  from { opacity: 0; transform: scale(0.85); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Scroll-triggered animation — dipakai IgHeroSection dll */
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(32px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.animate-ring-float   { animation: ring-float 8s ease-in-out infinite; }
-.animate-pulse-glow   { animation: pulse-glow 3s ease-in-out infinite; }
-.animate-count-up     { animation: count-up 0.6s ease-out forwards; }
-.animate-fade-up      { animation: fade-up 0.8s ease forwards; }
+.animate-ring-float {
+  animation: ring-float 8s ease-in-out infinite;
+}
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+.animate-count-up {
+  animation: count-up 0.6s ease-out forwards;
+}
+.animate-fade-up {
+  animation: fade-up 0.8s ease forwards;
+}
 
 /* ── Scrollbar ────────────────────────────────────────────────────── */
-::-webkit-scrollbar       { width: 3px; }
-::-webkit-scrollbar-track { background: var(--bg-primary); }
-::-webkit-scrollbar-thumb { background: var(--coffee-medium); border-radius: 2px; }
+::-webkit-scrollbar {
+  width: 3px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--coffee-medium);
+  border-radius: 2px;
+}
 
 /* ── Focus ────────────────────────────────────────────────────────── */
 :focus-visible {
@@ -145,7 +203,7 @@ body {
 
 /* ── Selection ────────────────────────────────────────────────────── */
 ::selection {
-  background: rgba(196, 149, 106, 0.25);
+  background: rgba(56, 189, 248, 0.25);
   color: var(--text-primary);
 }
 

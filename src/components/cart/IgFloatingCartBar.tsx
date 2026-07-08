@@ -41,11 +41,11 @@ export default function IgFloatingCartBar() {
 
   // ── Pulse state ──
   // Aktif saat item baru ditambahkan — scale + label "+N baru"
-  const [isPulsing, setIsPulsing]   = useState(false);
+  const [isPulsing, setIsPulsing] = useState(false);
   const [addedCount, setAddedCount] = useState(0);
-  const prevTotalRef                = useRef(totalItems);
-  const pulseTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const labelTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevTotalRef = useRef(totalItems);
+  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const labelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const diff = totalItems - prevTotalRef.current;
@@ -115,11 +115,11 @@ export default function IgFloatingCartBar() {
         // ── Visual ──
         background: "#140e07",
         border: isPulsing
-          ? "1px solid rgba(196,149,106,0.6)"
-          : "1px solid rgba(196,149,106,0.3)",
+          ? "1px solid rgba(56,189,248,0.6)"
+          : "1px solid rgba(56,189,248,0.3)",
         borderRadius: "9999px",
         boxShadow: isPulsing
-          ? "0 0 0 4px rgba(196,149,106,0.1), 0 8px 32px rgba(0,0,0,0.5)"
+          ? "0 0 0 4px rgba(56,189,248,0.1), 0 8px 32px rgba(0,0,0,0.5)"
           : "0 8px 32px rgba(0,0,0,0.45)",
         padding: "10px 12px 10px 12px",
         display: "flex",
@@ -135,9 +135,9 @@ export default function IgFloatingCartBar() {
             height: 38,
             borderRadius: "50%",
             background: isPulsing
-              ? "rgba(196,149,106,0.22)"
-              : "rgba(196,149,106,0.12)",
-            border: "1px solid rgba(196,149,106,0.25)",
+              ? "rgba(56,189,248,0.22)"
+              : "rgba(56,189,248,0.12)",
+            border: "1px solid rgba(56,189,248,0.25)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -146,7 +146,10 @@ export default function IgFloatingCartBar() {
         >
           <i
             className="fas fa-shopping-basket"
-            style={{ fontSize: "0.88rem", color: "var(--coffee-latte, #c4956a)" }}
+            style={{
+              fontSize: "0.88rem",
+              color: "var(--coffee-latte, #38bdf8)",
+            }}
           />
         </div>
 
@@ -159,7 +162,7 @@ export default function IgFloatingCartBar() {
             minWidth: 17,
             height: 17,
             borderRadius: "9999px",
-            background: "var(--coffee-latte, #c4956a)",
+            background: "var(--coffee-latte, #38bdf8)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -182,9 +185,8 @@ export default function IgFloatingCartBar() {
         <p
           style={{
             fontSize: "10px",
-            color: addedCount > 0
-              ? "rgba(196,149,106,0.9)"
-              : "rgba(196,149,106,0.6)",
+            color:
+              addedCount > 0 ? "rgba(56,189,248,0.9)" : "rgba(56,189,248,0.6)",
             margin: 0,
             fontFamily: "monospace",
             letterSpacing: "0.06em",
@@ -203,7 +205,7 @@ export default function IgFloatingCartBar() {
           style={{
             fontSize: "1rem",
             fontWeight: 600,
-            color: "var(--coffee-latte, #c4956a)",
+            color: "var(--coffee-latte, #38bdf8)",
             margin: 0,
             fontFamily: "'Cormorant Garamond', Georgia, serif",
             lineHeight: 1.2,
@@ -232,16 +234,21 @@ export default function IgFloatingCartBar() {
           WebkitTapHighlightColor: "transparent",
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(74,124,78,0.7)";
-          (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(135deg, #1f4520, #112610)";
+          (e.currentTarget as HTMLButtonElement).style.borderColor =
+            "rgba(74,124,78,0.7)";
+          (e.currentTarget as HTMLButtonElement).style.background =
+            "linear-gradient(135deg, #1f4520, #112610)";
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(74,124,78,0.4)";
-          (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(135deg, #1a3a1b, #0d1f0e)";
+          (e.currentTarget as HTMLButtonElement).style.borderColor =
+            "rgba(74,124,78,0.4)";
+          (e.currentTarget as HTMLButtonElement).style.background =
+            "linear-gradient(135deg, #1a3a1b, #0d1f0e)";
         }}
         onTouchStart={(e) => {
           // Feedback haptic di mobile
-          (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.97)";
+          (e.currentTarget as HTMLButtonElement).style.transform =
+            "scale(0.97)";
         }}
         onTouchEnd={(e) => {
           (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";

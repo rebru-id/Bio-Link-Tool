@@ -50,8 +50,8 @@ const METRICS = [
     unit: "kg",
     label: "Waste Processed",
     color: "var(--coffee-latte)",
-    bg: "rgba(196,149,106,0.08)",
-    border: "rgba(196,149,106,0.2)",
+    bg: "rgba(56,189,248,0.08)",
+    border: "rgba(56,189,248,0.2)",
   },
   {
     icon: "fa-leaf",
@@ -69,9 +69,9 @@ const METRICS = [
     suffix: "",
     unit: "mitra",
     label: "Active Partners",
-    color: "#c8a84b",
-    bg: "rgba(200,168,75,0.08)",
-    border: "rgba(200,168,75,0.2)",
+    color: "#ef9f27",
+    bg: "rgba(239,159,39,0.08)",
+    border: "rgba(239,159,39,0.2)",
   },
 ];
 
@@ -98,8 +98,8 @@ function ImpactCalculator({ inView }: { inView: boolean }) {
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center"
           style={{
-            background: "rgba(196,149,106,0.12)",
-            border: "1px solid rgba(196,149,106,0.2)",
+            background: "rgba(56,189,248,0.12)",
+            border: "1px solid rgba(56,189,248,0.2)",
           }}
         >
           <i
@@ -189,8 +189,8 @@ function ImpactCalculator({ inView }: { inView: boolean }) {
             value: `${biocharEquiv} kg`,
             icon: "fa-seedling",
             color: "var(--coffee-latte)",
-            bg: "rgba(196,149,106,0.08)",
-            border: "rgba(196,149,106,0.2)",
+            bg: "rgba(56,189,248,0.08)",
+            border: "rgba(56,189,248,0.2)",
           },
           {
             label: "Compost equiv.",
@@ -260,7 +260,7 @@ const FEED_ITEMS = [
     icon: "fa-fire",
     text: "15 kg Bio-briquettes diproduksi",
     time: "kemarin",
-    color: "#d4783a",
+    color: "#ba7517",
   },
 ];
 
